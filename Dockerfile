@@ -1,10 +1,8 @@
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM maven:3.9-eclipse-temurin-21-alpine
 WORKDIR /app
-COPY . .
-RUN ./mvnw package -DskipTests
-
-FROM eclipse-temurin:21-jre-alpine
-WORKDIR /app
-COPY --from=builder /app/target/*.jar app.jar
+COPY pom.xml .
+RUN mvn dependency:go-offline -B -q
+COPY src ./src
+RUN mvn package -DskipTests -q -Xmx512m
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+CMD ["java", "-Xmx256m", "-jar", "target/*.jar"]
