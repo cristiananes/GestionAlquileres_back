@@ -1,0 +1,6 @@
+.mvn/
+target/
+node_modules/
+.git/
+.idea/
+*.md
