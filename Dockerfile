@@ -6,4 +6,4 @@ COPY src ./src
 ENV MAVEN_OPTS="-Xmx512m"
 RUN mvn package -DskipTests -q
 EXPOSE 8080
-CMD ["java", "-Xmx256m", "-jar", "target/*.jar"]
+CMD java -Xmx256m -jar target/*.jar
