@@ -45,6 +45,8 @@ public class Property {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    private String imageUrl;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

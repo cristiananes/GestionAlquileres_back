@@ -37,6 +37,7 @@ public class PropertyService {
                 .hasElevator(request.getHasElevator())
                 .hasParking(request.getHasParking())
                 .description(request.getDescription())
+                .imageUrl(request.getImageUrl())
                 .build();
         return toResponse(repository.save(entity));
     }
@@ -54,6 +55,7 @@ public class PropertyService {
         entity.setHasElevator(request.getHasElevator());
         entity.setHasParking(request.getHasParking());
         entity.setDescription(request.getDescription());
+        entity.setImageUrl(request.getImageUrl());
         return toResponse(repository.save(entity));
     }
 
@@ -85,6 +87,7 @@ public class PropertyService {
                 .hasElevator(entity.getHasElevator())
                 .hasParking(entity.getHasParking())
                 .description(entity.getDescription())
+                .imageUrl(entity.getImageUrl())
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

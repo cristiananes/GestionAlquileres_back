@@ -21,6 +21,7 @@ public class PropertyResponse {
     private Boolean hasElevator;
     private Boolean hasParking;
     private String description;
+    private String imageUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

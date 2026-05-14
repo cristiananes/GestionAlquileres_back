@@ -24,4 +24,5 @@ public class PropertyRequest {
     private Boolean hasElevator;
     private Boolean hasParking;
     private String description;
+    private String imageUrl;
 }
