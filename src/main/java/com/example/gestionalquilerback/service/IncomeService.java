@@ -4,8 +4,8 @@ import com.example.gestionalquilerback.dto.IncomeRequest;
 import com.example.gestionalquilerback.dto.IncomeResponse;
 import com.example.gestionalquilerback.exception.ResourceNotFoundException;
 import com.example.gestionalquilerback.model.entity.Income;
-import com.example.gestionalquilerback.model.entity.Property;
 import com.example.gestionalquilerback.repository.IncomeRepository;
+import com.example.gestionalquilerback.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,15 +19,20 @@ public class IncomeService {
 
     private final IncomeRepository repository;
     private final PropertyService propertyService;
+    private final SecurityUtil securityUtil;
 
     public List<IncomeResponse> findAll(Long propertyId, LocalDate from, LocalDate to) {
-        if (propertyId != null) {
-            return repository.findByPropertyId(propertyId).stream().map(this::toResponse).toList();
+        List<Income> incomes;
+        if (securityUtil.isAdmin()) {
+            incomes = repository.findAll();
+        } else {
+            incomes = repository.findByUserId(securityUtil.getCurrentUserId());
         }
-        if (from != null && to != null) {
-            return repository.findByIncomeDateBetween(from, to).stream().map(this::toResponse).toList();
-        }
-        return repository.findAll().stream().map(this::toResponse).toList();
+        return incomes.stream()
+                .filter(i -> propertyId == null || (i.getProperty() != null && i.getProperty().getId().equals(propertyId)))
+                .filter(i -> from == null || to == null || (!i.getIncomeDate().isBefore(from) && !i.getIncomeDate().isAfter(to)))
+                .map(this::toResponse)
+                .toList();
     }
 
     public IncomeResponse findById(Long id) {
@@ -42,6 +47,7 @@ public class IncomeService {
                 .incomeDate(request.getIncomeDate())
                 .incomeType(request.getIncomeType())
                 .paymentMethod(request.getPaymentMethod())
+                .user(securityUtil.getCurrentUser())
                 .build();
         return toResponse(repository.save(entity));
     }
@@ -58,17 +64,24 @@ public class IncomeService {
     }
 
     public void delete(Long id) {
-        if (!repository.existsById(id)) throw new ResourceNotFoundException("Income", id);
-        repository.deleteById(id);
+        Income entity = findEntity(id);
+        repository.deleteById(entity.getId());
     }
 
     public BigDecimal total() {
-        return repository.sumAll();
+        if (securityUtil.isAdmin()) {
+            return repository.sumAllGlobal();
+        }
+        return repository.sumAll(securityUtil.getCurrentUserId());
     }
 
     public Income findEntity(Long id) {
-        return repository.findById(id)
+        Income entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Income", id));
+        if (!securityUtil.isAdmin() && !entity.getUser().getId().equals(securityUtil.getCurrentUserId())) {
+            throw new ResourceNotFoundException("Income", id);
+        }
+        return entity;
     }
 
     private IncomeResponse toResponse(Income entity) {

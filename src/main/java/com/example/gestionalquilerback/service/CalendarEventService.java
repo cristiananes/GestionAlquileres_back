@@ -5,6 +5,7 @@ import com.example.gestionalquilerback.dto.CalendarEventResponse;
 import com.example.gestionalquilerback.exception.ResourceNotFoundException;
 import com.example.gestionalquilerback.model.entity.CalendarEvent;
 import com.example.gestionalquilerback.repository.CalendarEventRepository;
+import com.example.gestionalquilerback.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,15 +18,20 @@ public class CalendarEventService {
 
     private final CalendarEventRepository repository;
     private final PropertyService propertyService;
+    private final SecurityUtil securityUtil;
 
     public List<CalendarEventResponse> findAll(Long propertyId, LocalDateTime from, LocalDateTime to) {
-        if (propertyId != null) {
-            return repository.findByPropertyId(propertyId).stream().map(this::toResponse).toList();
+        List<CalendarEvent> events;
+        if (securityUtil.isAdmin()) {
+            events = repository.findAll();
+        } else {
+            events = repository.findByUserId(securityUtil.getCurrentUserId());
         }
-        if (from != null && to != null) {
-            return repository.findByStartDateTimeBetween(from, to).stream().map(this::toResponse).toList();
-        }
-        return repository.findAll().stream().map(this::toResponse).toList();
+        return events.stream()
+                .filter(e -> propertyId == null || (e.getProperty() != null && e.getProperty().getId().equals(propertyId)))
+                .filter(e -> from == null || to == null || (!e.getStartDateTime().isBefore(from) && !e.getStartDateTime().isAfter(to)))
+                .map(this::toResponse)
+                .toList();
     }
 
     public CalendarEventResponse findById(Long id) {
@@ -42,6 +48,7 @@ public class CalendarEventService {
                 .eventType(request.getEventType())
                 .color(request.getColor())
                 .allDay(request.isAllDay())
+                .user(securityUtil.getCurrentUser())
                 .build();
         return toResponse(repository.save(entity));
     }
@@ -60,19 +67,28 @@ public class CalendarEventService {
     }
 
     public void delete(Long id) {
-        if (!repository.existsById(id)) throw new ResourceNotFoundException("CalendarEvent", id);
-        repository.deleteById(id);
+        CalendarEvent entity = findEntity(id);
+        repository.deleteById(entity.getId());
     }
 
     public List<CalendarEventResponse> findUpcoming() {
-        return repository.findByStartDateTimeAfter(LocalDateTime.now()).stream()
+        if (securityUtil.isAdmin()) {
+            return repository.findByStartDateTimeAfter(LocalDateTime.now()).stream()
+                    .map(this::toResponse)
+                    .toList();
+        }
+        return repository.findByUserIdAndStartDateTimeAfter(securityUtil.getCurrentUserId(), LocalDateTime.now()).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     public CalendarEvent findEntity(Long id) {
-        return repository.findById(id)
+        CalendarEvent entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CalendarEvent", id));
+        if (!securityUtil.isAdmin() && !entity.getUser().getId().equals(securityUtil.getCurrentUserId())) {
+            throw new ResourceNotFoundException("CalendarEvent", id);
+        }
+        return entity;
     }
 
     private CalendarEventResponse toResponse(CalendarEvent entity) {

@@ -7,6 +7,8 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
@@ -46,6 +48,15 @@ public class Property {
     private String description;
 
     private String imageUrl;
+
+    @OneToMany(mappedBy = "property", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("createdAt ASC")
+    @Builder.Default
+    private List<PropertyImage> images = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

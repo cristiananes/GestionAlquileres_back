@@ -62,22 +62,11 @@ public class PropertyController {
         Files.createDirectories(uploadPath);
         Path filePath = uploadPath.resolve(filename);
         file.transferTo(filePath.toFile());
+        return ResponseEntity.ok(service.addImage(id, "/uploads/properties/" + filename));
+    }
 
-        PropertyResponse property = service.findById(id);
-        PropertyRequest request = PropertyRequest.builder()
-                .name(property.getName())
-                .address(property.getAddress())
-                .city(property.getCity())
-                .propertyType(property.getPropertyType())
-                .areaM2(property.getAreaM2())
-                .bedrooms(property.getBedrooms())
-                .bathrooms(property.getBathrooms())
-                .condition(property.getCondition())
-                .hasElevator(property.getHasElevator())
-                .hasParking(property.getHasParking())
-                .description(property.getDescription())
-                .imageUrl("/uploads/properties/" + filename)
-                .build();
-        return ResponseEntity.ok(service.update(id, request));
+    @DeleteMapping("/{id}/images/{imageId}")
+    public ResponseEntity<PropertyResponse> deleteImage(@PathVariable Long id, @PathVariable Long imageId) {
+        return ResponseEntity.ok(service.deleteImage(id, imageId));
     }
 }

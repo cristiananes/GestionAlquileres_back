@@ -5,6 +5,7 @@ import com.example.gestionalquilerback.dto.TaskResponse;
 import com.example.gestionalquilerback.exception.ResourceNotFoundException;
 import com.example.gestionalquilerback.model.entity.Task;
 import com.example.gestionalquilerback.repository.TaskRepository;
+import com.example.gestionalquilerback.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,15 +17,20 @@ public class TaskService {
 
     private final TaskRepository repository;
     private final PropertyService propertyService;
+    private final SecurityUtil securityUtil;
 
     public List<TaskResponse> findAll(Long propertyId, Boolean completed) {
-        if (propertyId != null) {
-            return repository.findByPropertyId(propertyId).stream().map(this::toResponse).toList();
+        List<Task> tasks;
+        if (securityUtil.isAdmin()) {
+            tasks = repository.findAll();
+        } else {
+            tasks = repository.findByUserId(securityUtil.getCurrentUserId());
         }
-        if (completed != null) {
-            return repository.findByCompleted(completed).stream().map(this::toResponse).toList();
-        }
-        return repository.findAll().stream().map(this::toResponse).toList();
+        return tasks.stream()
+                .filter(t -> propertyId == null || (t.getProperty() != null && t.getProperty().getId().equals(propertyId)))
+                .filter(t -> completed == null || t.isCompleted() == completed)
+                .map(this::toResponse)
+                .toList();
     }
 
     public TaskResponse findById(Long id) {
@@ -39,6 +45,7 @@ public class TaskService {
                 .completed(request.isCompleted())
                 .dueDate(request.getDueDate())
                 .priority(request.getPriority() != null ? request.getPriority() : com.example.gestionalquilerback.model.enums.Priority.MEDIUM)
+                .user(securityUtil.getCurrentUser())
                 .build();
         return toResponse(repository.save(entity));
     }
@@ -61,17 +68,24 @@ public class TaskService {
     }
 
     public void delete(Long id) {
-        if (!repository.existsById(id)) throw new ResourceNotFoundException("Task", id);
-        repository.deleteById(id);
+        Task entity = findEntity(id);
+        repository.deleteById(entity.getId());
     }
 
     public long countPending() {
-        return repository.countByCompleted(false);
+        if (securityUtil.isAdmin()) {
+            return repository.countByCompleted(false);
+        }
+        return repository.countByUserIdAndCompleted(securityUtil.getCurrentUserId(), false);
     }
 
     public Task findEntity(Long id) {
-        return repository.findById(id)
+        Task entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Task", id));
+        if (!securityUtil.isAdmin() && !entity.getUser().getId().equals(securityUtil.getCurrentUserId())) {
+            throw new ResourceNotFoundException("Task", id);
+        }
+        return entity;
     }
 
     private TaskResponse toResponse(Task entity) {

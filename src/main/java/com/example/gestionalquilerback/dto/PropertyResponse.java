@@ -6,6 +6,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class PropertyResponse {
@@ -22,6 +23,7 @@ public class PropertyResponse {
     private Boolean hasParking;
     private String description;
     private String imageUrl;
+    private List<String> images;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

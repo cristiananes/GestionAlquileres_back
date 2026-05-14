@@ -4,9 +4,12 @@ import com.example.gestionalquilerback.dto.PropertyRequest;
 import com.example.gestionalquilerback.dto.PropertyResponse;
 import com.example.gestionalquilerback.exception.ResourceNotFoundException;
 import com.example.gestionalquilerback.model.entity.Property;
+import com.example.gestionalquilerback.model.entity.PropertyImage;
 import com.example.gestionalquilerback.repository.PropertyRepository;
+import com.example.gestionalquilerback.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -15,9 +18,16 @@ import java.util.List;
 public class PropertyService {
 
     private final PropertyRepository repository;
+    private final SecurityUtil securityUtil;
 
     public List<PropertyResponse> findAll() {
-        return repository.findAll().stream().map(this::toResponse).toList();
+        List<Property> properties;
+        if (securityUtil.isAdmin()) {
+            properties = repository.findAll();
+        } else {
+            properties = repository.findByUserId(securityUtil.getCurrentUserId());
+        }
+        return properties.stream().map(this::toResponse).toList();
     }
 
     public PropertyResponse findById(Long id) {
@@ -38,6 +48,7 @@ public class PropertyService {
                 .hasParking(request.getHasParking())
                 .description(request.getDescription())
                 .imageUrl(request.getImageUrl())
+                .user(securityUtil.getCurrentUser())
                 .build();
         return toResponse(repository.save(entity));
     }
@@ -60,20 +71,60 @@ public class PropertyService {
     }
 
     public void delete(Long id) {
-        if (!repository.existsById(id)) throw new ResourceNotFoundException("Property", id);
-        repository.deleteById(id);
+        Property entity = findEntity(id);
+        repository.deleteById(entity.getId());
     }
 
     public Property findEntity(Long id) {
-        return repository.findById(id)
+        Property entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Property", id));
+        if (!securityUtil.isAdmin() && !entity.getUser().getId().equals(securityUtil.getCurrentUserId())) {
+            throw new ResourceNotFoundException("Property", id);
+        }
+        return entity;
     }
 
     public long count() {
-        return repository.count();
+        if (securityUtil.isAdmin()) {
+            return repository.count();
+        }
+        return repository.countByUserId(securityUtil.getCurrentUserId());
+    }
+
+    @Transactional
+    public PropertyResponse addImage(Long propertyId, String imageUrl) {
+        Property entity = findEntity(propertyId);
+        PropertyImage image = PropertyImage.builder()
+                .property(entity)
+                .imageUrl(imageUrl)
+                .build();
+        entity.getImages().add(image);
+        if (entity.getImageUrl() == null) {
+            entity.setImageUrl(imageUrl);
+        }
+        return toResponse(repository.save(entity));
+    }
+
+    @Transactional
+    public PropertyResponse deleteImage(Long propertyId, Long imageId) {
+        Property entity = findEntity(propertyId);
+        boolean removed = entity.getImages().removeIf(img -> img.getId().equals(imageId));
+        if (!removed) throw new ResourceNotFoundException("Image", imageId);
+        if (entity.getImages().isEmpty()) {
+            entity.setImageUrl(null);
+        } else {
+            entity.setImageUrl(entity.getImages().getFirst().getImageUrl());
+        }
+        return toResponse(repository.save(entity));
     }
 
     private PropertyResponse toResponse(Property entity) {
+        List<String> imageUrls = entity.getImages().stream()
+                .map(PropertyImage::getImageUrl)
+                .toList();
+        if (imageUrls.isEmpty() && entity.getImageUrl() != null) {
+            imageUrls = List.of(entity.getImageUrl());
+        }
         return PropertyResponse.builder()
                 .id(entity.getId())
                 .name(entity.getName())
@@ -88,6 +139,7 @@ public class PropertyService {
                 .hasParking(entity.getHasParking())
                 .description(entity.getDescription())
                 .imageUrl(entity.getImageUrl())
+                .images(imageUrls)
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();

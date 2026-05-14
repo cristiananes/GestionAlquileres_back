@@ -4,6 +4,7 @@ import com.example.gestionalquilerback.model.entity.Expense;
 import com.example.gestionalquilerback.model.entity.Income;
 import com.example.gestionalquilerback.repository.ExpenseRepository;
 import com.example.gestionalquilerback.repository.IncomeRepository;
+import com.example.gestionalquilerback.security.SecurityUtil;
 import com.lowagie.text.*;
 import com.lowagie.text.Font;
 import com.lowagie.text.pdf.PdfPCell;
@@ -25,29 +26,56 @@ public class ReportService {
 
     private final IncomeRepository incomeRepository;
     private final ExpenseRepository expenseRepository;
+    private final SecurityUtil securityUtil;
 
     public byte[] generateIncomeReport(LocalDate from, LocalDate to) {
+        Long userId = securityUtil.getCurrentUserId();
+        boolean isAdmin = securityUtil.isAdmin();
         List<Income> incomes;
         BigDecimal total;
         if (from != null && to != null) {
-            incomes = incomeRepository.findByIncomeDateBetween(from, to);
-            total = incomeRepository.sumByIncomeDateBetween(from, to);
+            if (isAdmin) {
+                incomes = incomeRepository.findByIncomeDateBetween(from, to);
+                total = incomeRepository.sumByIncomeDateBetweenGlobal(from, to);
+            } else {
+                incomes = incomeRepository.findByIncomeDateBetween(from, to).stream()
+                        .filter(i -> i.getUser().getId().equals(userId)).toList();
+                total = incomeRepository.sumByIncomeDateBetween(userId, from, to);
+            }
         } else {
-            incomes = incomeRepository.findAll();
-            total = incomeRepository.sumAll();
+            if (isAdmin) {
+                incomes = incomeRepository.findAll();
+                total = incomeRepository.sumAllGlobal();
+            } else {
+                incomes = incomeRepository.findByUserId(userId);
+                total = incomeRepository.sumAll(userId);
+            }
         }
         return buildPdf("Reporte de Ingresos", from, to, incomes, total);
     }
 
     public byte[] generateExpenseReport(LocalDate from, LocalDate to) {
+        Long userId = securityUtil.getCurrentUserId();
+        boolean isAdmin = securityUtil.isAdmin();
         List<Expense> expenses;
         BigDecimal total;
         if (from != null && to != null) {
-            expenses = expenseRepository.findByExpenseDateBetween(from, to);
-            total = expenseRepository.sumByExpenseDateBetween(from, to);
+            if (isAdmin) {
+                expenses = expenseRepository.findByExpenseDateBetween(from, to);
+                total = expenseRepository.sumByExpenseDateBetweenGlobal(from, to);
+            } else {
+                expenses = expenseRepository.findByExpenseDateBetween(from, to).stream()
+                        .filter(e -> e.getUser().getId().equals(userId)).toList();
+                total = expenseRepository.sumByExpenseDateBetween(userId, from, to);
+            }
         } else {
-            expenses = expenseRepository.findAll();
-            total = expenseRepository.sumAll();
+            if (isAdmin) {
+                expenses = expenseRepository.findAll();
+                total = expenseRepository.sumAllGlobal();
+            } else {
+                expenses = expenseRepository.findByUserId(userId);
+                total = expenseRepository.sumAll(userId);
+            }
         }
         return buildPdf("Reporte de Gastos", from, to, expenses, total);
     }

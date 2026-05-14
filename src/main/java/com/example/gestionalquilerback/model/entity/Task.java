@@ -35,6 +35,10 @@ public class Task {
     @Builder.Default
     private Priority priority = Priority.MEDIUM;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -5,6 +5,7 @@ import com.example.gestionalquilerback.dto.ExpenseResponse;
 import com.example.gestionalquilerback.exception.ResourceNotFoundException;
 import com.example.gestionalquilerback.model.entity.Expense;
 import com.example.gestionalquilerback.repository.ExpenseRepository;
+import com.example.gestionalquilerback.security.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,15 +19,20 @@ public class ExpenseService {
 
     private final ExpenseRepository repository;
     private final PropertyService propertyService;
+    private final SecurityUtil securityUtil;
 
     public List<ExpenseResponse> findAll(Long propertyId, LocalDate from, LocalDate to) {
-        if (propertyId != null) {
-            return repository.findByPropertyId(propertyId).stream().map(this::toResponse).toList();
+        List<Expense> expenses;
+        if (securityUtil.isAdmin()) {
+            expenses = repository.findAll();
+        } else {
+            expenses = repository.findByUserId(securityUtil.getCurrentUserId());
         }
-        if (from != null && to != null) {
-            return repository.findByExpenseDateBetween(from, to).stream().map(this::toResponse).toList();
-        }
-        return repository.findAll().stream().map(this::toResponse).toList();
+        return expenses.stream()
+                .filter(e -> propertyId == null || (e.getProperty() != null && e.getProperty().getId().equals(propertyId)))
+                .filter(e -> from == null || to == null || (!e.getExpenseDate().isBefore(from) && !e.getExpenseDate().isAfter(to)))
+                .map(this::toResponse)
+                .toList();
     }
 
     public ExpenseResponse findById(Long id) {
@@ -40,6 +46,7 @@ public class ExpenseService {
                 .description(request.getDescription())
                 .expenseDate(request.getExpenseDate())
                 .category(request.getCategory())
+                .user(securityUtil.getCurrentUser())
                 .build();
         return toResponse(repository.save(entity));
     }
@@ -55,17 +62,24 @@ public class ExpenseService {
     }
 
     public void delete(Long id) {
-        if (!repository.existsById(id)) throw new ResourceNotFoundException("Expense", id);
-        repository.deleteById(id);
+        Expense entity = findEntity(id);
+        repository.deleteById(entity.getId());
     }
 
     public BigDecimal total() {
-        return repository.sumAll();
+        if (securityUtil.isAdmin()) {
+            return repository.sumAllGlobal();
+        }
+        return repository.sumAll(securityUtil.getCurrentUserId());
     }
 
     public Expense findEntity(Long id) {
-        return repository.findById(id)
+        Expense entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense", id));
+        if (!securityUtil.isAdmin() && !entity.getUser().getId().equals(securityUtil.getCurrentUserId())) {
+            throw new ResourceNotFoundException("Expense", id);
+        }
+        return entity;
     }
 
     private ExpenseResponse toResponse(Expense entity) {
