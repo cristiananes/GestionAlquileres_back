@@ -47,7 +47,7 @@ public class PropertyService {
                 .hasElevator(request.getHasElevator())
                 .hasParking(request.getHasParking())
                 .description(request.getDescription())
-                .imageUrl(request.getImageUrl())
+                .imageUrl(request.getImageUrl() != null && !request.getImageUrl().isBlank() ? request.getImageUrl() : null)
                 .user(securityUtil.getCurrentUser())
                 .build();
         return toResponse(repository.save(entity));
@@ -66,7 +66,7 @@ public class PropertyService {
         entity.setHasElevator(request.getHasElevator());
         entity.setHasParking(request.getHasParking());
         entity.setDescription(request.getDescription());
-        entity.setImageUrl(request.getImageUrl());
+        entity.setImageUrl(request.getImageUrl() != null && !request.getImageUrl().isBlank() ? request.getImageUrl() : null);
         return toResponse(repository.save(entity));
     }
 
@@ -106,10 +106,10 @@ public class PropertyService {
     }
 
     @Transactional
-    public PropertyResponse deleteImage(Long propertyId, Long imageId) {
+    public PropertyResponse deleteImage(Long propertyId, String imageUrl) {
         Property entity = findEntity(propertyId);
-        boolean removed = entity.getImages().removeIf(img -> img.getId().equals(imageId));
-        if (!removed) throw new ResourceNotFoundException("Image", imageId);
+        boolean removed = entity.getImages().removeIf(img -> img.getImageUrl().equals(imageUrl));
+        if (!removed) throw new ResourceNotFoundException("Image not found: " + imageUrl);
         if (entity.getImages().isEmpty()) {
             entity.setImageUrl(null);
         } else {
@@ -122,7 +122,7 @@ public class PropertyService {
         List<String> imageUrls = entity.getImages().stream()
                 .map(PropertyImage::getImageUrl)
                 .toList();
-        if (imageUrls.isEmpty() && entity.getImageUrl() != null) {
+        if (imageUrls.isEmpty() && entity.getImageUrl() != null && !entity.getImageUrl().isBlank()) {
             imageUrls = List.of(entity.getImageUrl());
         }
         return PropertyResponse.builder()

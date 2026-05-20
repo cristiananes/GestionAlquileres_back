@@ -1,5 +1,6 @@
 FROM maven:3.9-eclipse-temurin-21-alpine
 WORKDIR /app
+RUN mkdir -p /app/uploads/properties
 COPY pom.xml .
 RUN mvn dependency:go-offline -B -q
 COPY src ./src

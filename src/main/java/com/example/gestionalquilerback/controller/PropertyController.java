@@ -57,7 +57,8 @@ public class PropertyController {
 
     @PostMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PropertyResponse> uploadImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) throws IOException {
-        String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown";
+        String filename = UUID.randomUUID() + "_" + originalName;
         Path uploadPath = Paths.get(uploadDir, "properties");
         Files.createDirectories(uploadPath);
         Path filePath = uploadPath.resolve(filename);
@@ -65,8 +66,8 @@ public class PropertyController {
         return ResponseEntity.ok(service.addImage(id, "/uploads/properties/" + filename));
     }
 
-    @DeleteMapping("/{id}/images/{imageId}")
-    public ResponseEntity<PropertyResponse> deleteImage(@PathVariable Long id, @PathVariable Long imageId) {
-        return ResponseEntity.ok(service.deleteImage(id, imageId));
+    @PostMapping("/{id}/images/delete")
+    public ResponseEntity<PropertyResponse> deleteImage(@PathVariable Long id, @RequestBody java.util.Map<String, String> body) {
+        return ResponseEntity.ok(service.deleteImage(id, body.get("imageUrl")));
     }
 }
