@@ -14,14 +14,20 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Service
+@org.springframework.transaction.annotation.Transactional
 @RequiredArgsConstructor
 public class IncomeService {
 
     private final IncomeRepository repository;
     private final PropertyService propertyService;
     private final SecurityUtil securityUtil;
+    private final PaymentIntegrity paymentIntegrity;
 
     public List<IncomeResponse> findAll(Long propertyId, LocalDate from, LocalDate to) {
+        return findAll(propertyId, from, to, false);
+    }
+
+    public List<IncomeResponse> findAll(Long propertyId, LocalDate from, LocalDate to, boolean archived) {
         DateRangeValidator.validate(from, to);
         List<Income> incomes;
         if (securityUtil.isAdmin()) {
@@ -30,6 +36,7 @@ public class IncomeService {
             incomes = repository.findByUserId(securityUtil.getCurrentUserId());
         }
         return incomes.stream()
+                .filter(e -> e.isArchived() == archived)
                 .filter(i -> propertyId == null || (i.getProperty() != null && i.getProperty().getId().equals(propertyId)))
                 .filter(i -> from == null || !i.getIncomeDate().isBefore(from))
                 .filter(i -> to == null || !i.getIncomeDate().isAfter(to))
@@ -42,7 +49,12 @@ public class IncomeService {
     }
 
     public IncomeResponse create(IncomeRequest request) {
+        if (request.getClientRequestId() != null) {
+            var existing = repository.findByClientRequestIdAndUserId(request.getClientRequestId(), securityUtil.getCurrentUserId());
+            if (existing.isPresent()) return toResponse(existing.get());
+        }
         Income entity = Income.builder()
+                .clientRequestId(request.getClientRequestId())
                 .property(request.getPropertyId() != null ? propertyService.findEntity(request.getPropertyId()) : null)
                 .amount(request.getAmount())
                 .description(request.getDescription())
@@ -56,6 +68,7 @@ public class IncomeService {
 
     public IncomeResponse update(Long id, IncomeRequest request) {
         Income entity = findEntity(id);
+        if (entity.getOccurrenceId() != null) throw new IllegalArgumentException("Este pago procede de un vencimiento. Para corregirlo, archívalo y registra el pago correcto desde Recurrencias.");
         entity.setProperty(request.getPropertyId() != null ? propertyService.findEntity(request.getPropertyId()) : null);
         entity.setAmount(request.getAmount());
         entity.setDescription(request.getDescription());
@@ -67,7 +80,9 @@ public class IncomeService {
 
     public void delete(Long id) {
         Income entity = findEntity(id);
-        repository.deleteById(entity.getId());
+        paymentIntegrity.lock(entity.getOccurrenceId(), null, true);
+        entity.setArchived(true);
+        repository.save(entity);
     }
 
     public BigDecimal total() {
@@ -83,6 +98,13 @@ public class IncomeService {
         return repository.sumForPeriod(securityUtil.isAdmin() ? null : securityUtil.getCurrentUserId(), from, to);
     }
 
+    public void restore(Long id) {
+        var entity = findEntity(id);
+        if (entity.isArchived()) paymentIntegrity.lock(entity.getOccurrenceId(), entity.getAmount(), true);
+        entity.setArchived(false);
+        repository.save(entity);
+    }
+
     public Income findEntity(Long id) {
         Income entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Income", id));
@@ -95,6 +117,8 @@ public class IncomeService {
     private IncomeResponse toResponse(Income entity) {
         return IncomeResponse.builder()
                 .id(entity.getId())
+                .archived(entity.isArchived())
+                .occurrenceId(entity.getOccurrenceId())
                 .propertyId(entity.getProperty() != null ? entity.getProperty().getId() : null)
                 .propertyName(entity.getProperty() != null ? entity.getProperty().getName() : null)
                 .amount(entity.getAmount())

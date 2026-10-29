@@ -14,6 +14,12 @@ public class PropertyResponse {
     private String name;
     private String address;
     private String city;
+    private java.math.BigDecimal purchasePrice;
+    private java.math.BigDecimal purchaseCosts;
+    private java.math.BigDecimal renovationCosts;
+    private java.math.BigDecimal furnitureCosts;
+    private java.math.BigDecimal cashInvested;
+
     private PropertyType propertyType;
     private BigDecimal areaM2;
     private Integer bedrooms;

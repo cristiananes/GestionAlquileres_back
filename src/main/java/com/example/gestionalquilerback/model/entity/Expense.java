@@ -12,6 +12,14 @@ import java.time.LocalDateTime;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Expense {
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean archived;
+
+    @Column(unique = true, length = 80)
+    private String clientRequestId;
+
+    private Long occurrenceId;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

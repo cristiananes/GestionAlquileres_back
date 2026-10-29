@@ -1,33 +1,22 @@
 package com.example.gestionalquilerback.config;
-
 import com.example.gestionalquilerback.model.entity.User;
 import com.example.gestionalquilerback.model.enums.Role;
 import com.example.gestionalquilerback.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-
-@Component
-@RequiredArgsConstructor
-@Slf4j
+import org.springframework.security.crypto.password.PasswordEncoder;
+import lombok.RequiredArgsConstructor;
+@Component @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
-    @Override
-    public void run(String... args) {
-        if (!userRepository.existsByEmail("admin@gestionalquiler.com")) {
-            User admin = User.builder()
-                    .name("Admin")
-                    .email("admin@gestionalquiler.com")
-                    .password(passwordEncoder.encode("admin123"))
-                    .role(Role.ADMIN)
-                    .build();
-            userRepository.save(admin);
-            log.info("Usuario admin creado: admin@gestionalquiler.com / admin123");
-        }
+    @Value("${APP_BOOTSTRAP_ADMIN_ENABLED:false}") private boolean enabled;
+    @Value("${APP_BOOTSTRAP_ADMIN_EMAIL:}") private String email;
+    @Value("${APP_BOOTSTRAP_ADMIN_PASSWORD:}") private String password;
+    @Override public void run(String... args) {
+        if (!enabled) return;
+        if (email.isBlank() || password.length() < 16) throw new IllegalStateException("Configura el email y una contraseña de administrador de al menos 16 caracteres");
+        if (!userRepository.existsByEmail(email)) userRepository.save(User.builder().name("Administrador").email(email).password(passwordEncoder.encode(password)).role(Role.ADMIN).build());
     }
 }

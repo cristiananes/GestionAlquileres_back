@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class ExpenseResponse {
     private Long id;
+    private Long occurrenceId;
+    private boolean archived;
     private Long propertyId;
     private String propertyName;
     private BigDecimal amount;

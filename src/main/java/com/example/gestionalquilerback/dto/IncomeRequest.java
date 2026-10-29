@@ -12,6 +12,8 @@ import java.time.LocalDate;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class IncomeRequest {
+    @jakarta.validation.constraints.Size(max = 80)
+    private String clientRequestId;
     private Long propertyId;
 
     @NotNull @Positive

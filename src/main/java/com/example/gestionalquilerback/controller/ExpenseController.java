@@ -24,8 +24,9 @@ public class ExpenseController {
     public ResponseEntity<List<ExpenseResponse>> findAll(
             @RequestParam(required = false) Long propertyId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return ResponseEntity.ok(service.findAll(propertyId, from, to));
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "false") boolean archived) {
+        return ResponseEntity.ok(service.findAll(propertyId, from, to, archived));
     }
 
     @GetMapping("/{id}")
@@ -41,6 +42,12 @@ public class ExpenseController {
     @PutMapping("/{id}")
     public ResponseEntity<ExpenseResponse> update(@PathVariable Long id, @Valid @RequestBody ExpenseRequest request) {
         return ResponseEntity.ok(service.update(id, request));
+    }
+
+    @PostMapping("/{id}/restore")
+    public ResponseEntity<Void> restore(@PathVariable Long id) {
+        service.restore(id);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")

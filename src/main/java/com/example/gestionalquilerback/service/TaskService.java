@@ -20,6 +20,10 @@ public class TaskService {
     private final SecurityUtil securityUtil;
 
     public List<TaskResponse> findAll(Long propertyId, Boolean completed) {
+        return findAll(propertyId, completed, false);
+    }
+
+    public List<TaskResponse> findAll(Long propertyId, Boolean completed, boolean archived) {
         List<Task> tasks;
         if (securityUtil.isAdmin()) {
             tasks = repository.findAll();
@@ -27,6 +31,7 @@ public class TaskService {
             tasks = repository.findByUserId(securityUtil.getCurrentUserId());
         }
         return tasks.stream()
+                .filter(e -> e.isArchived() == archived)
                 .filter(t -> propertyId == null || (t.getProperty() != null && t.getProperty().getId().equals(propertyId)))
                 .filter(t -> completed == null || t.isCompleted() == completed)
                 .map(this::toResponse)
@@ -69,14 +74,21 @@ public class TaskService {
 
     public void delete(Long id) {
         Task entity = findEntity(id);
-        repository.deleteById(entity.getId());
+        entity.setArchived(true);
+        repository.save(entity);
     }
 
     public long countPending() {
         if (securityUtil.isAdmin()) {
-            return repository.countByCompleted(false);
+            return repository.findAll().stream().filter(t -> !t.isArchived() && !t.isCompleted()).count();
         }
-        return repository.countByUserIdAndCompleted(securityUtil.getCurrentUserId(), false);
+        return repository.findByUserId(securityUtil.getCurrentUserId()).stream().filter(t -> !t.isArchived() && !t.isCompleted()).count();
+    }
+
+    public void restore(Long id) {
+        var entity = findEntity(id);
+        entity.setArchived(false);
+        repository.save(entity);
     }
 
     public Task findEntity(Long id) {

@@ -16,6 +16,17 @@ public class PropertyRequest {
     private String address;
 
     private String city;
+    @jakarta.validation.constraints.PositiveOrZero
+    private java.math.BigDecimal purchasePrice;
+    @jakarta.validation.constraints.PositiveOrZero
+    private java.math.BigDecimal purchaseCosts;
+    @jakarta.validation.constraints.PositiveOrZero
+    private java.math.BigDecimal renovationCosts;
+    @jakarta.validation.constraints.PositiveOrZero
+    private java.math.BigDecimal furnitureCosts;
+    @jakarta.validation.constraints.PositiveOrZero
+    private java.math.BigDecimal cashInvested;
+
     private PropertyType propertyType;
     private BigDecimal areaM2;
     private Integer bedrooms;

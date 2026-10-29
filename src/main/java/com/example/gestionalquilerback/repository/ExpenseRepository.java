@@ -17,20 +17,22 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     List<Expense> findByUserId(Long userId);
 
-    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.user.id = :userId AND e.expenseDate BETWEEN :start AND :end")
+    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.archived = false AND e.user.id = :userId AND e.expenseDate BETWEEN :start AND :end")
     BigDecimal sumByExpenseDateBetween(@Param("userId") Long userId, @Param("start") LocalDate start, @Param("end") LocalDate end);
 
-    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.user.id = :userId")
+    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.archived = false AND e.user.id = :userId")
     BigDecimal sumAll(@Param("userId") Long userId);
 
-    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.expenseDate BETWEEN :start AND :end")
+    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.archived = false AND e.expenseDate BETWEEN :start AND :end")
     BigDecimal sumByExpenseDateBetweenGlobal(@Param("start") LocalDate start, @Param("end") LocalDate end);
 
-    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e")
+    @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e WHERE e.archived = false")
     BigDecimal sumAllGlobal();
     @Query("SELECT COALESCE(SUM(e.amount), 0) FROM Expense e " +
-            "WHERE (:userId IS NULL OR e.user.id = :userId) " +
+            "WHERE e.archived = false AND (:userId IS NULL OR e.user.id = :userId) " +
             "AND (:from IS NULL OR e.expenseDate >= :from) " +
             "AND (:to IS NULL OR e.expenseDate <= :to)")
     BigDecimal sumForPeriod(@Param("userId") Long userId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+    java.util.Optional<Expense> findByClientRequestIdAndUserId(String clientRequestId, Long userId);
+    List<Expense> findByOccurrenceIdAndArchivedFalse(Long occurrenceId);
 }

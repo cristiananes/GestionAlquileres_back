@@ -25,13 +25,21 @@ import java.util.UUID;
 public class PropertyController {
 
     private final PropertyService service;
+    private final com.example.gestionalquilerback.service.InvestmentService investmentService;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
     @GetMapping
-    public ResponseEntity<List<PropertyResponse>> findAll() {
-        return ResponseEntity.ok(service.findAll());
+    @RequestParam(defaultValue = "false") boolean archivedp@RequestParam(defaultValue = "false") boolean archivedu@RequestParam(defaultValue = "false") boolean archivedb@RequestParam(defaultValue = "false") boolean archivedl@RequestParam(defaultValue = "false") boolean archivedi@RequestParam(defaultValue = "false") boolean archivedc@RequestParam(defaultValue = "false") boolean archived @RequestParam(defaultValue = "false") boolean archivedR@RequestParam(defaultValue = "false") boolean archivede@RequestParam(defaultValue = "false") boolean archiveds@RequestParam(defaultValue = "false") boolean archivedp@RequestParam(defaultValue = "false") boolean archivedo@RequestParam(defaultValue = "false") boolean archivedn@RequestParam(defaultValue = "false") boolean archiveds@RequestParam(defaultValue = "false") boolean archivede@RequestParam(defaultValue = "false") boolean archivedE@RequestParam(defaultValue = "false") boolean archivedn@RequestParam(defaultValue = "false") boolean archivedt@RequestParam(defaultValue = "false") boolean archivedi@RequestParam(defaultValue = "false") boolean archivedt@RequestParam(defaultValue = "false") boolean archivedy@RequestParam(defaultValue = "false") boolean archived<@RequestParam(defaultValue = "false") boolean archivedL@RequestParam(defaultValue = "false") boolean archivedi@RequestParam(defaultValue = "false") boolean archiveds@RequestParam(defaultValue = "false") boolean archivedt@RequestParam(defaultValue = "false") boolean archived<@RequestParam(defaultValue = "false") boolean archivedP@RequestParam(defaultValue = "false") boolean archivedr@RequestParam(defaultValue = "false") boolean archivedo@RequestParam(defaultValue = "false") boolean archivedp@RequestParam(defaultValue = "false") boolean archivede@RequestParam(defaultValue = "false") boolean archivedr@RequestParam(defaultValue = "false") boolean archivedt@RequestParam(defaultValue = "false") boolean archivedy@RequestParam(defaultValue = "false") boolean archivedR@RequestParam(defaultValue = "false") boolean archivede@RequestParam(defaultValue = "false") boolean archiveds@RequestParam(defaultValue = "false") boolean archivedp@RequestParam(defaultValue = "false") boolean archivedo@RequestParam(defaultValue = "false") boolean archivedn@RequestParam(defaultValue = "false") boolean archiveds@RequestParam(defaultValue = "false") boolean archivede@RequestParam(defaultValue = "false") boolean archived>@RequestParam(defaultValue = "false") boolean archived>@RequestParam(defaultValue = "false") boolean archived @RequestParam(defaultValue = "false") boolean archivedf@RequestParam(defaultValue = "false") boolean archivedi@RequestParam(defaultValue = "false") boolean archivedn@RequestParam(defaultValue = "false") boolean archivedd@RequestParam(defaultValue = "false") boolean archivedA@RequestParam(defaultValue = "false") boolean archivedl@RequestParam(defaultValue = "false") boolean archivedl@RequestParam(defaultValue = "false") boolean archived(@RequestParam(defaultValue = "false") boolean archived)@RequestParam(defaultValue = "false") boolean archived @RequestParam(defaultValue = "false") boolean archived{@RequestParam(defaultValue = "false") boolean archived
+        return ResponseEntity.ok(service.findAll(archived));
+    }
+
+    @GetMapping("/{id}/investment")
+    public com.example.gestionalquilerback.dto.InvestmentSummary investment(@PathVariable Long id,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to) {
+        return investmentService.summary(id, from, to);
     }
 
     @GetMapping("/{id}")
@@ -47,6 +55,12 @@ public class PropertyController {
     @PutMapping("/{id}")
     public ResponseEntity<PropertyResponse> update(@PathVariable Long id, @Valid @RequestBody PropertyRequest request) {
         return ResponseEntity.ok(service.update(id, request));
+    }
+
+    @PostMapping("/{id}/restore")
+    public ResponseEntity<Void> restore(@PathVariable Long id) {
+        service.restore(id);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")

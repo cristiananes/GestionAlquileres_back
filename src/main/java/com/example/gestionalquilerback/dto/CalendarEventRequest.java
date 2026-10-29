@@ -9,6 +9,8 @@ import java.time.LocalDateTime;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class CalendarEventRequest {
+    @jakarta.validation.constraints.Size(max = 80)
+    private String clientRequestId;
     private Long propertyId;
 
     @NotBlank
