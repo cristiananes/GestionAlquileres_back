@@ -23,6 +23,7 @@ import java.text.NumberFormat;
 import java.util.Locale;
 
 @Service
+@org.springframework.transaction.annotation.Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class ReportService {
 
@@ -30,56 +31,23 @@ public class ReportService {
     private final ExpenseRepository expenseRepository;
     private final SecurityUtil securityUtil;
 
-    public byte[] generateIncomeReport(LocalDate from, LocalDate to) {
-        Long userId = securityUtil.getCurrentUserId();
-        boolean isAdmin = securityUtil.isAdmin();
-        List<Income> incomes;
-        BigDecimal total;
-        if (from != null && to != null) {
-            if (isAdmin) {
-                incomes = incomeRepository.findByIncomeDateBetween(from, to);
-                total = incomeRepository.sumByIncomeDateBetweenGlobal(from, to);
-            } else {
-                incomes = incomeRepository.findByIncomeDateBetween(from, to).stream()
-                        .filter(i -> i.getUser().getId().equals(userId)).toList();
-                total = incomeRepository.sumByIncomeDateBetween(userId, from, to);
-            }
-        } else {
-            if (isAdmin) {
-                incomes = incomeRepository.findAll();
-                total = incomeRepository.sumAllGlobal();
-            } else {
-                incomes = incomeRepository.findByUserId(userId);
-                total = incomeRepository.sumAll(userId);
-            }
-        }
-        return buildPdf("Informe de Ingresos", from, to, incomes, total);
+    public byte[] generateIncomeReport(LocalDate from, LocalDate to, Long propertyId) {
+        DateRangeValidator.validate(from, to);
+        var items = (securityUtil.isAdmin() ? incomeRepository.findAll() : incomeRepository.findByUserId(securityUtil.getCurrentUserId())).stream()
+                .filter(i -> !i.isArchived())
+                .filter(i -> propertyId == null || i.getProperty() != null && i.getProperty().getId().equals(propertyId))
+                .filter(i -> from == null || !i.getIncomeDate().isBefore(from)).filter(i -> to == null || !i.getIncomeDate().isAfter(to))
+                .sorted(java.util.Comparator.comparing(Income::getIncomeDate)).toList();
+        return buildPdf("Informe de Ingresos", from, to, items, items.stream().map(Income::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
     }
-
-    public byte[] generateExpenseReport(LocalDate from, LocalDate to) {
-        Long userId = securityUtil.getCurrentUserId();
-        boolean isAdmin = securityUtil.isAdmin();
-        List<Expense> expenses;
-        BigDecimal total;
-        if (from != null && to != null) {
-            if (isAdmin) {
-                expenses = expenseRepository.findByExpenseDateBetween(from, to);
-                total = expenseRepository.sumByExpenseDateBetweenGlobal(from, to);
-            } else {
-                expenses = expenseRepository.findByExpenseDateBetween(from, to).stream()
-                        .filter(e -> e.getUser().getId().equals(userId)).toList();
-                total = expenseRepository.sumByExpenseDateBetween(userId, from, to);
-            }
-        } else {
-            if (isAdmin) {
-                expenses = expenseRepository.findAll();
-                total = expenseRepository.sumAllGlobal();
-            } else {
-                expenses = expenseRepository.findByUserId(userId);
-                total = expenseRepository.sumAll(userId);
-            }
-        }
-        return buildPdf("Informe de Gastos", from, to, expenses, total);
+    public byte[] generateExpenseReport(LocalDate from, LocalDate to, Long propertyId) {
+        DateRangeValidator.validate(from, to);
+        var items = (securityUtil.isAdmin() ? expenseRepository.findAll() : expenseRepository.findByUserId(securityUtil.getCurrentUserId())).stream()
+                .filter(e -> !e.isArchived())
+                .filter(e -> propertyId == null || e.getProperty() != null && e.getProperty().getId().equals(propertyId))
+                .filter(e -> from == null || !e.getExpenseDate().isBefore(from)).filter(e -> to == null || !e.getExpenseDate().isAfter(to))
+                .sorted(java.util.Comparator.comparing(Expense::getExpenseDate)).toList();
+        return buildPdf("Informe de Gastos", from, to, items, items.stream().map(Expense::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add));
     }
 
     private String formatCurrency(BigDecimal amount) {
@@ -98,9 +66,9 @@ public class ReportService {
         titlePara.setSpacingAfter(10);
         document.add(titlePara);
 
-        if (from != null && to != null) {
+        if (from != null || to != null) {
             DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-            Paragraph dateRange = new Paragraph("Período: " + from.format(fmt) + " - " + to.format(fmt),
+            Paragraph dateRange = new Paragraph("Período: " + (from == null ? "Inicio" : from.format(fmt)) + " - " + (to == null ? "Actualidad" : to.format(fmt)),
                     FontFactory.getFont(FontFactory.HELVETICA, 11, Color.GRAY));
             dateRange.setAlignment(Element.ALIGN_CENTER);
             dateRange.setSpacingAfter(20);

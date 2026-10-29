@@ -25,13 +25,26 @@ import java.util.UUID;
 public class PropertyController {
 
     private final PropertyService service;
+    private final com.example.gestionalquilerback.service.InvestmentService investmentService;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
     @GetMapping
-    public ResponseEntity<List<PropertyResponse>> findAll() {
-        return ResponseEntity.ok(service.findAll());
+    public ResponseEntity<List<PropertyResponse>> findAll(@RequestParam(defaultValue = "false") boolean archived) {
+        return ResponseEntity.ok(service.findAll(archived));
+    }
+
+    @PutMapping("/{id}/investment")
+    public PropertyResponse updateInvestment(@PathVariable Long id, @Valid @RequestBody com.example.gestionalquilerback.dto.PropertyInvestmentRequest request) {
+        return service.updateInvestment(id, request);
+    }
+
+    @GetMapping("/{id}/investment")
+    public com.example.gestionalquilerback.dto.InvestmentSummary investment(@PathVariable Long id,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate from,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate to) {
+        return investmentService.summary(id, from, to);
     }
 
     @GetMapping("/{id}")
@@ -49,6 +62,12 @@ public class PropertyController {
         return ResponseEntity.ok(service.update(id, request));
     }
 
+    @PostMapping("/{id}/restore")
+    public ResponseEntity<Void> restore(@PathVariable Long id) {
+        service.restore(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
@@ -57,8 +76,14 @@ public class PropertyController {
 
     @PostMapping(value = "/{id}/image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PropertyResponse> uploadImage(@PathVariable Long id, @RequestParam("file") MultipartFile file) throws IOException {
-        String originalName = file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown";
-        String filename = UUID.randomUUID() + "_" + originalName;
+        service.findEntity(id);
+        byte[] bytes = file.getBytes();
+        if (bytes.length == 0 || bytes.length > 5 * 1024 * 1024) throw new IllegalArgumentException("La imagen debe tener entre 1 byte y 5 MB");
+        String extension;
+        if (bytes.length >= 3 && (bytes[0] & 255) == 255 && (bytes[1] & 255) == 216 && (bytes[2] & 255) == 255) extension = ".jpg";
+        else if (bytes.length >= 8 && (bytes[0] & 255) == 137 && bytes[1] == 'P' && bytes[2] == 'N' && bytes[3] == 'G') extension = ".png";
+        else throw new IllegalArgumentException("Solo se admiten imágenes PNG y JPEG");
+        String filename = UUID.randomUUID() + extension;
         Path uploadPath = Paths.get(uploadDir, "properties");
         Files.createDirectories(uploadPath);
         Path filePath = uploadPath.resolve(filename);

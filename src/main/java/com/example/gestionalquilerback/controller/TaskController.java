@@ -21,8 +21,9 @@ public class TaskController {
     @GetMapping
     public ResponseEntity<List<TaskResponse>> findAll(
             @RequestParam(required = false) Long propertyId,
-            @RequestParam(required = false) Boolean completed) {
-        return ResponseEntity.ok(service.findAll(propertyId, completed));
+            @RequestParam(required = false) Boolean completed,
+            @RequestParam(defaultValue = "false") boolean archived) {
+        return ResponseEntity.ok(service.findAll(propertyId, completed, archived));
     }
 
     @GetMapping("/{id}")
@@ -43,6 +44,12 @@ public class TaskController {
     @PatchMapping("/{id}/toggle")
     public ResponseEntity<TaskResponse> toggleCompleted(@PathVariable Long id) {
         return ResponseEntity.ok(service.toggleCompleted(id));
+    }
+
+    @PostMapping("/{id}/restore")
+    public ResponseEntity<Void> restore(@PathVariable Long id) {
+        service.restore(id);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")

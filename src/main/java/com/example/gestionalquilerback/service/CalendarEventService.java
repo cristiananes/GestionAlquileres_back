@@ -22,6 +22,10 @@ public class CalendarEventService {
     private final SecurityUtil securityUtil;
 
     public List<CalendarEventResponse> findAll(Long propertyId, LocalDateTime from, LocalDateTime to) {
+        return findAll(propertyId, from, to, false);
+    }
+
+    public List<CalendarEventResponse> findAll(Long propertyId, LocalDateTime from, LocalDateTime to, boolean archived) {
         List<CalendarEvent> events;
         if (securityUtil.isAdmin()) {
             events = repository.findAll();
@@ -29,6 +33,7 @@ public class CalendarEventService {
             events = repository.findByUserId(securityUtil.getCurrentUserId());
         }
         return events.stream()
+                .filter(e -> e.isArchived() == archived)
                 .filter(e -> propertyId == null || (e.getProperty() != null && e.getProperty().getId().equals(propertyId)))
                 .filter(e -> from == null || to == null || (!e.getStartDateTime().isBefore(from) && !e.getStartDateTime().isAfter(to)))
                 .map(this::toResponse)
@@ -40,7 +45,13 @@ public class CalendarEventService {
     }
 
     public CalendarEventResponse create(CalendarEventRequest request) {
+        if (request.getEndDateTime().isBefore(request.getStartDateTime())) throw new IllegalArgumentException("El fin no puede ser anterior al inicio");
+        if (request.getClientRequestId() != null) {
+            var existing = repository.findByClientRequestIdAndUserId(request.getClientRequestId(), securityUtil.getCurrentUserId());
+            if (existing.isPresent()) return toResponse(existing.get());
+        }
         CalendarEvent entity = CalendarEvent.builder()
+                .clientRequestId(request.getClientRequestId())
                 .property(request.getPropertyId() != null ? propertyService.findEntity(request.getPropertyId()) : null)
                 .title(request.getTitle())
                 .description(request.getDescription())
@@ -55,6 +66,7 @@ public class CalendarEventService {
     }
 
     public CalendarEventResponse update(Long id, CalendarEventRequest request) {
+        if (request.getEndDateTime().isBefore(request.getStartDateTime())) throw new IllegalArgumentException("El fin no puede ser anterior al inicio");
         CalendarEvent entity = findEntity(id);
         entity.setProperty(request.getPropertyId() != null ? propertyService.findEntity(request.getPropertyId()) : null);
         entity.setTitle(request.getTitle());
@@ -69,22 +81,31 @@ public class CalendarEventService {
 
     public void delete(Long id) {
         CalendarEvent entity = findEntity(id);
-        repository.deleteById(entity.getId());
+        entity.setArchived(true);
+        repository.save(entity);
     }
 
     public List<CalendarEventResponse> findUpcoming() {
         if (securityUtil.isAdmin()) {
             return repository.findByStartDateTimeAfter(LocalDateTime.now()).stream()
+                    .filter(e -> !e.isArchived())
                     .sorted(Comparator.comparing(CalendarEvent::getStartDateTime).thenComparing(CalendarEvent::getId))
                     .limit(5)
                     .map(this::toResponse)
                     .toList();
         }
         return repository.findByUserIdAndStartDateTimeAfter(securityUtil.getCurrentUserId(), LocalDateTime.now()).stream()
-                .sorted(Comparator.comparing(CalendarEvent::getStartDateTime).thenComparing(CalendarEvent::getId))
+                .filter(e -> !e.isArchived())
+                    .sorted(Comparator.comparing(CalendarEvent::getStartDateTime).thenComparing(CalendarEvent::getId))
                 .limit(5)
                 .map(this::toResponse)
                 .toList();
+    }
+
+    public void restore(Long id) {
+        var entity = findEntity(id);
+        entity.setArchived(false);
+        repository.save(entity);
     }
 
     public CalendarEvent findEntity(Long id) {

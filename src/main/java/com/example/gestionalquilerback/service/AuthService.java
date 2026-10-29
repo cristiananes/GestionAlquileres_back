@@ -50,6 +50,9 @@ public class AuthService {
             throw new BadCredentialsException("Email o contraseña incorrectos");
         }
 
+        if (user.getRole() == com.example.gestionalquilerback.model.enums.Role.ADMIN && request.getPassword().length() < 16) {
+            throw new BadCredentialsException("El acceso administrativo requiere una contraseña de al menos 16 caracteres. Actualiza la configuración de esa cuenta.");
+        }
         String token = tokenProvider.generateToken(user);
 
         return AuthResponse.builder()

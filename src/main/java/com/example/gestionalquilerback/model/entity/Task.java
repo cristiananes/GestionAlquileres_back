@@ -11,6 +11,9 @@ import java.time.LocalDateTime;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Task {
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean archived;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

@@ -21,13 +21,17 @@ public class PropertyService {
     private final SecurityUtil securityUtil;
 
     public List<PropertyResponse> findAll() {
+        return findAll(false);
+    }
+
+    public List<PropertyResponse> findAll(boolean archived) {
         List<Property> properties;
         if (securityUtil.isAdmin()) {
             properties = repository.findAll();
         } else {
             properties = repository.findByUserId(securityUtil.getCurrentUserId());
         }
-        return properties.stream().map(this::toResponse).toList();
+        return properties.stream().filter(p -> p.isArchived() == archived).map(this::toResponse).toList();
     }
 
     public PropertyResponse findById(Long id) {
@@ -38,6 +42,11 @@ public class PropertyService {
         Property entity = Property.builder()
                 .name(request.getName())
                 .address(request.getAddress())
+                .purchasePrice(request.getPurchasePrice())
+                .purchaseCosts(request.getPurchaseCosts())
+                .renovationCosts(request.getRenovationCosts())
+                .furnitureCosts(request.getFurnitureCosts())
+                .cashInvested(request.getCashInvested())
                 .city(request.getCity())
                 .propertyType(request.getPropertyType())
                 .areaM2(request.getAreaM2())
@@ -70,9 +79,26 @@ public class PropertyService {
         return toResponse(repository.save(entity));
     }
 
+    public PropertyResponse updateInvestment(Long id, com.example.gestionalquilerback.dto.PropertyInvestmentRequest request) {
+        var entity = findEntity(id);
+        entity.setPurchasePrice(request.getPurchasePrice());
+        entity.setPurchaseCosts(request.getPurchaseCosts());
+        entity.setRenovationCosts(request.getRenovationCosts());
+        entity.setFurnitureCosts(request.getFurnitureCosts());
+        entity.setCashInvested(request.getCashInvested());
+        return toResponse(repository.save(entity));
+    }
+
     public void delete(Long id) {
         Property entity = findEntity(id);
-        repository.deleteById(entity.getId());
+        entity.setArchived(true);
+        repository.save(entity);
+    }
+
+    public void restore(Long id) {
+        var entity = findEntity(id);
+        entity.setArchived(false);
+        repository.save(entity);
     }
 
     public Property findEntity(Long id) {
@@ -86,9 +112,9 @@ public class PropertyService {
 
     public long count() {
         if (securityUtil.isAdmin()) {
-            return repository.count();
+            return repository.findAll().stream().filter(p -> !p.isArchived()).count();
         }
-        return repository.countByUserId(securityUtil.getCurrentUserId());
+        return repository.findByUserId(securityUtil.getCurrentUserId()).stream().filter(p -> !p.isArchived()).count();
     }
 
     @Transactional
@@ -129,6 +155,11 @@ public class PropertyService {
                 .id(entity.getId())
                 .name(entity.getName())
                 .address(entity.getAddress())
+                .purchasePrice(entity.getPurchasePrice())
+                .purchaseCosts(entity.getPurchaseCosts())
+                .renovationCosts(entity.getRenovationCosts())
+                .furnitureCosts(entity.getFurnitureCosts())
+                .cashInvested(entity.getCashInvested())
                 .city(entity.getCity())
                 .propertyType(entity.getPropertyType())
                 .areaM2(entity.getAreaM2())

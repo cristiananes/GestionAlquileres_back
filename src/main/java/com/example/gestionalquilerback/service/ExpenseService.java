@@ -14,14 +14,20 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Service
+@org.springframework.transaction.annotation.Transactional
 @RequiredArgsConstructor
 public class ExpenseService {
 
     private final ExpenseRepository repository;
     private final PropertyService propertyService;
     private final SecurityUtil securityUtil;
+    private final PaymentIntegrity paymentIntegrity;
 
     public List<ExpenseResponse> findAll(Long propertyId, LocalDate from, LocalDate to) {
+        return findAll(propertyId, from, to, false);
+    }
+
+    public List<ExpenseResponse> findAll(Long propertyId, LocalDate from, LocalDate to, boolean archived) {
         DateRangeValidator.validate(from, to);
         List<Expense> expenses;
         if (securityUtil.isAdmin()) {
@@ -30,6 +36,7 @@ public class ExpenseService {
             expenses = repository.findByUserId(securityUtil.getCurrentUserId());
         }
         return expenses.stream()
+                .filter(e -> e.isArchived() == archived)
                 .filter(e -> propertyId == null || (e.getProperty() != null && e.getProperty().getId().equals(propertyId)))
                 .filter(e -> from == null || !e.getExpenseDate().isBefore(from))
                 .filter(e -> to == null || !e.getExpenseDate().isAfter(to))
@@ -42,7 +49,13 @@ public class ExpenseService {
     }
 
     public ExpenseResponse create(ExpenseRequest request) {
+        if (request.getExpenseDate().isAfter(LocalDate.now())) throw new IllegalArgumentException("Para fechas futuras usa un vencimiento previsto en Recurrencias");
+        if (request.getClientRequestId() != null) {
+            var existing = repository.findByClientRequestIdAndUserId(request.getClientRequestId(), securityUtil.getCurrentUserId());
+            if (existing.isPresent()) return toResponse(existing.get());
+        }
         Expense entity = Expense.builder()
+                .clientRequestId(request.getClientRequestId())
                 .property(request.getPropertyId() != null ? propertyService.findEntity(request.getPropertyId()) : null)
                 .amount(request.getAmount())
                 .description(request.getDescription())
@@ -55,6 +68,7 @@ public class ExpenseService {
 
     public ExpenseResponse update(Long id, ExpenseRequest request) {
         Expense entity = findEntity(id);
+        if (entity.getOccurrenceId() != null) throw new IllegalArgumentException("Este pago procede de un vencimiento. Para corregirlo, archívalo y registra el pago correcto desde Recurrencias.");
         entity.setProperty(request.getPropertyId() != null ? propertyService.findEntity(request.getPropertyId()) : null);
         entity.setAmount(request.getAmount());
         entity.setDescription(request.getDescription());
@@ -65,7 +79,9 @@ public class ExpenseService {
 
     public void delete(Long id) {
         Expense entity = findEntity(id);
-        repository.deleteById(entity.getId());
+        paymentIntegrity.lock(entity.getOccurrenceId(), null, false);
+        entity.setArchived(true);
+        repository.save(entity);
     }
 
     public BigDecimal total() {
@@ -81,6 +97,13 @@ public class ExpenseService {
         return repository.sumForPeriod(securityUtil.isAdmin() ? null : securityUtil.getCurrentUserId(), from, to);
     }
 
+    public void restore(Long id) {
+        var entity = findEntity(id);
+        if (entity.isArchived()) paymentIntegrity.lock(entity.getOccurrenceId(), entity.getAmount(), false);
+        entity.setArchived(false);
+        repository.save(entity);
+    }
+
     public Expense findEntity(Long id) {
         Expense entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Expense", id));
@@ -93,6 +116,8 @@ public class ExpenseService {
     private ExpenseResponse toResponse(Expense entity) {
         return ExpenseResponse.builder()
                 .id(entity.getId())
+                .archived(entity.isArchived())
+                .occurrenceId(entity.getOccurrenceId())
                 .propertyId(entity.getProperty() != null ? entity.getProperty().getId() : null)
                 .propertyName(entity.getProperty() != null ? entity.getProperty().getName() : null)
                 .amount(entity.getAmount())

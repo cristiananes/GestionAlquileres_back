@@ -24,8 +24,9 @@ public class CalendarEventController {
     public ResponseEntity<List<CalendarEventResponse>> findAll(
             @RequestParam(required = false) Long propertyId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
-        return ResponseEntity.ok(service.findAll(propertyId, from, to));
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(defaultValue = "false") boolean archived) {
+        return ResponseEntity.ok(service.findAll(propertyId, from, to, archived));
     }
 
     @GetMapping("/{id}")
@@ -41,6 +42,12 @@ public class CalendarEventController {
     @PutMapping("/{id}")
     public ResponseEntity<CalendarEventResponse> update(@PathVariable Long id, @Valid @RequestBody CalendarEventRequest request) {
         return ResponseEntity.ok(service.update(id, request));
+    }
+
+    @PostMapping("/{id}/restore")
+    public ResponseEntity<Void> restore(@PathVariable Long id) {
+        service.restore(id);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")

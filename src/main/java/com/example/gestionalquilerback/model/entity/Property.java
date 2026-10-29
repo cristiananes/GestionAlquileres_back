@@ -14,6 +14,9 @@ import java.util.List;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Property {
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean archived;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -25,6 +28,17 @@ public class Property {
     private String address;
 
     private String city;
+    @Column(precision = 14, scale = 2)
+    private java.math.BigDecimal purchasePrice;
+    @Column(precision = 14, scale = 2)
+    private java.math.BigDecimal purchaseCosts;
+    @Column(precision = 14, scale = 2)
+    private java.math.BigDecimal renovationCosts;
+    @Column(precision = 14, scale = 2)
+    private java.math.BigDecimal furnitureCosts;
+    @Column(precision = 14, scale = 2)
+    private java.math.BigDecimal cashInvested;
+
 
     @Enumerated(EnumType.STRING)
     private PropertyType propertyType;

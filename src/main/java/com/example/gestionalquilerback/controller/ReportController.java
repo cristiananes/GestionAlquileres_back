@@ -20,8 +20,8 @@ public class ReportController {
     @GetMapping("/incomes")
     public ResponseEntity<byte[]> downloadIncomeReport(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        byte[] pdf = reportService.generateIncomeReport(from, to);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to, @RequestParam(required = false) Long propertyId) {
+        byte[] pdf = reportService.generateIncomeReport(from, to, propertyId);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=ingresos.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
@@ -31,8 +31,8 @@ public class ReportController {
     @GetMapping("/expenses")
     public ResponseEntity<byte[]> downloadExpenseReport(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        byte[] pdf = reportService.generateExpenseReport(from, to);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to, @RequestParam(required = false) Long propertyId) {
+        byte[] pdf = reportService.generateExpenseReport(from, to, propertyId);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=gastos.pdf")
                 .contentType(MediaType.APPLICATION_PDF)
