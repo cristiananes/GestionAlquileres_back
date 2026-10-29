@@ -39,7 +39,7 @@ public class InvestmentService {
             if (rule.getKind() == MovementKind.INCOME && rule.getIncomeType() != IncomeType.DEPOSIT) gross = gross.add(amount);
             if (rule.getKind() == MovementKind.EXPENSE) {
                 if (rule.getCategory() == ExpenseCategory.FINANCING) financing = financing.add(amount);
-                else if (rule.getCategory() != ExpenseCategory.INVESTMENT) operating = operating.add(amount);
+                else if (rule.getCategory() != ExpenseCategory.INVESTMENT && rule.getCategory() != ExpenseCategory.DEPOSIT_REFUND) operating = operating.add(amount);
             }
         }
         var net = gross.subtract(operating);
@@ -55,8 +55,8 @@ public class InvestmentService {
             if (i.getIncomeType() == IncomeType.DEPOSIT) deposits = deposits.add(i.getAmount()); else gross = gross.add(i.getAmount());
         }
         for (var e : expenses) if ((from == null || !e.getExpenseDate().isBefore(from)) && (to == null || !e.getExpenseDate().isAfter(to))) {
-            totalExpenses = totalExpenses.add(e.getAmount());
-            if (e.getCategory() != ExpenseCategory.FINANCING && e.getCategory() != ExpenseCategory.INVESTMENT) operating = operating.add(e.getAmount());
+            if (e.getCategory() != ExpenseCategory.DEPOSIT_REFUND) totalExpenses = totalExpenses.add(e.getAmount());
+            if (e.getCategory() != ExpenseCategory.FINANCING && e.getCategory() != ExpenseCategory.INVESTMENT && e.getCategory() != ExpenseCategory.DEPOSIT_REFUND) operating = operating.add(e.getAmount());
         }
         var net = gross.subtract(operating);
         // Fianzas are liabilities: keep them out of returns and cash available to the owner.

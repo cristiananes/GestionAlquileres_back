@@ -56,4 +56,14 @@ class RecurringPaymentsIntegrationTest {
         service.pay(rule.id(), PaymentRequest.builder().dueDate(today).paymentDate(today).amount(new BigDecimal("100")).clientRequestId("replacement-payment").build());
         assertThrows(IllegalArgumentException.class,()->incomeService.restore(original.getId()));
     }
+    @Test void finishingARulePreservesAdvancePaymentsAndTheirRetry() {
+        var future = LocalDate.now().plusMonths(1);
+        var rule = service.create(RecurringRuleRequest.builder().kind(MovementKind.INCOME).frequency(RecurrenceFrequency.MONTHLY).amount(BigDecimal.TEN).description("Advance rent").startDate(future).incomeType(IncomeType.RENT).clientRequestId("advance-rule").build());
+        var req = PaymentRequest.builder().dueDate(future).paymentDate(LocalDate.now()).amount(BigDecimal.TEN).clientRequestId("advance-payment").build();
+        service.pay(rule.id(),req);
+        service.finish(rule.id());
+        assertEquals("PAID",service.pay(rule.id(),req).status());
+        assertEquals(1,incomes.count());
+        assertEquals("PAID",service.upcoming(null,future,future).getFirst().status());
+    }
 }

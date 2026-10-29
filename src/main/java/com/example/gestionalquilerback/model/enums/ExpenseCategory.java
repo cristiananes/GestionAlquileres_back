@@ -1,7 +1,7 @@
 package com.example.gestionalquilerback.model.enums;
 
 public enum ExpenseCategory {
-    INVESTMENT, FINANCING,
+    INVESTMENT, FINANCING, DEPOSIT_REFUND,
     REPAIR,
     MAINTENANCE,
     TAXES,

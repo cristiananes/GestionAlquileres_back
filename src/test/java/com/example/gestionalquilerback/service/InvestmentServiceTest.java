@@ -24,7 +24,7 @@ class InvestmentServiceTest {
         var p = Property.builder().id(1L).purchasePrice(new BigDecimal("100000")).build();
         when(ps.findEntity(1L)).thenReturn(p);
         when(ir.findByPropertyId(1L)).thenReturn(List.of(Income.builder().incomeDate(LocalDate.now()).amount(new BigDecimal("800")).incomeType(IncomeType.RENT).build(), Income.builder().incomeDate(LocalDate.now()).amount(new BigDecimal("1600")).incomeType(IncomeType.DEPOSIT).build()));
-        when(er.findByPropertyId(1L)).thenReturn(List.of(Expense.builder().expenseDate(LocalDate.now()).amount(new BigDecimal("150")).category(ExpenseCategory.UTILITIES).build(),Expense.builder().expenseDate(LocalDate.now()).amount(new BigDecimal("400")).category(ExpenseCategory.FINANCING).build()));
+        when(er.findByPropertyId(1L)).thenReturn(List.of(Expense.builder().expenseDate(LocalDate.now()).amount(new BigDecimal("150")).category(ExpenseCategory.UTILITIES).build(),Expense.builder().expenseDate(LocalDate.now()).amount(new BigDecimal("400")).category(ExpenseCategory.FINANCING).build(),Expense.builder().expenseDate(LocalDate.now()).amount(new BigDecimal("1600")).category(ExpenseCategory.DEPOSIT_REFUND).build()));
         when(rr.findByPropertyId(1L)).thenReturn(List.of());
         var result = new InvestmentService(ps,ir,er,rr).summary(1L,null,null);
         assertEquals(0,new BigDecimal("650").compareTo(result.period().netIncome()));
