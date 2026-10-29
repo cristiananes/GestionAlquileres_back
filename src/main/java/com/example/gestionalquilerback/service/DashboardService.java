@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
@@ -17,8 +18,13 @@ public class DashboardService {
     private final CalendarEventService calendarEventService;
 
     public DashboardSummaryResponse getSummary() {
-        BigDecimal totalIncomes = incomeService.total();
-        BigDecimal totalExpenses = expenseService.total();
+        return getSummary(null, null);
+    }
+
+    public DashboardSummaryResponse getSummary(LocalDate from, LocalDate to) {
+        DateRangeValidator.validate(from, to);
+        BigDecimal totalIncomes = incomeService.total(from, to);
+        BigDecimal totalExpenses = expenseService.total(from, to);
         BigDecimal balance = totalIncomes.subtract(totalExpenses);
 
         return DashboardSummaryResponse.builder()

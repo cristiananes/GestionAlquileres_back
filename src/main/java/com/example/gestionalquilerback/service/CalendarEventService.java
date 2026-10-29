@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Comparator;
 
 @Service
 @RequiredArgsConstructor
@@ -74,10 +75,14 @@ public class CalendarEventService {
     public List<CalendarEventResponse> findUpcoming() {
         if (securityUtil.isAdmin()) {
             return repository.findByStartDateTimeAfter(LocalDateTime.now()).stream()
+                    .sorted(Comparator.comparing(CalendarEvent::getStartDateTime).thenComparing(CalendarEvent::getId))
+                    .limit(5)
                     .map(this::toResponse)
                     .toList();
         }
         return repository.findByUserIdAndStartDateTimeAfter(securityUtil.getCurrentUserId(), LocalDateTime.now()).stream()
+                .sorted(Comparator.comparing(CalendarEvent::getStartDateTime).thenComparing(CalendarEvent::getId))
+                .limit(5)
                 .map(this::toResponse)
                 .toList();
     }

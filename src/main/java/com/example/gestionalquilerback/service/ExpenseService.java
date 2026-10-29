@@ -22,6 +22,7 @@ public class ExpenseService {
     private final SecurityUtil securityUtil;
 
     public List<ExpenseResponse> findAll(Long propertyId, LocalDate from, LocalDate to) {
+        DateRangeValidator.validate(from, to);
         List<Expense> expenses;
         if (securityUtil.isAdmin()) {
             expenses = repository.findAll();
@@ -30,7 +31,8 @@ public class ExpenseService {
         }
         return expenses.stream()
                 .filter(e -> propertyId == null || (e.getProperty() != null && e.getProperty().getId().equals(propertyId)))
-                .filter(e -> from == null || to == null || (!e.getExpenseDate().isBefore(from) && !e.getExpenseDate().isAfter(to)))
+                .filter(e -> from == null || !e.getExpenseDate().isBefore(from))
+                .filter(e -> to == null || !e.getExpenseDate().isAfter(to))
                 .map(this::toResponse)
                 .toList();
     }
@@ -71,6 +73,12 @@ public class ExpenseService {
             return repository.sumAllGlobal();
         }
         return repository.sumAll(securityUtil.getCurrentUserId());
+    }
+
+    public BigDecimal total(LocalDate from, LocalDate to) {
+        DateRangeValidator.validate(from, to);
+        if (from == null && to == null) return total();
+        return repository.sumForPeriod(securityUtil.isAdmin() ? null : securityUtil.getCurrentUserId(), from, to);
     }
 
     public Expense findEntity(Long id) {
