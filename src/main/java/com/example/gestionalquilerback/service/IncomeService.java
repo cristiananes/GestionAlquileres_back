@@ -22,6 +22,7 @@ public class IncomeService {
     private final SecurityUtil securityUtil;
 
     public List<IncomeResponse> findAll(Long propertyId, LocalDate from, LocalDate to) {
+        DateRangeValidator.validate(from, to);
         List<Income> incomes;
         if (securityUtil.isAdmin()) {
             incomes = repository.findAll();
@@ -30,7 +31,8 @@ public class IncomeService {
         }
         return incomes.stream()
                 .filter(i -> propertyId == null || (i.getProperty() != null && i.getProperty().getId().equals(propertyId)))
-                .filter(i -> from == null || to == null || (!i.getIncomeDate().isBefore(from) && !i.getIncomeDate().isAfter(to)))
+                .filter(i -> from == null || !i.getIncomeDate().isBefore(from))
+                .filter(i -> to == null || !i.getIncomeDate().isAfter(to))
                 .map(this::toResponse)
                 .toList();
     }
@@ -73,6 +75,12 @@ public class IncomeService {
             return repository.sumAllGlobal();
         }
         return repository.sumAll(securityUtil.getCurrentUserId());
+    }
+
+    public BigDecimal total(LocalDate from, LocalDate to) {
+        DateRangeValidator.validate(from, to);
+        if (from == null && to == null) return total();
+        return repository.sumForPeriod(securityUtil.isAdmin() ? null : securityUtil.getCurrentUserId(), from, to);
     }
 
     public Income findEntity(Long id) {

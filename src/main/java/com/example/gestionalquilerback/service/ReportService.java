@@ -19,6 +19,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -51,7 +53,7 @@ public class ReportService {
                 total = incomeRepository.sumAll(userId);
             }
         }
-        return buildPdf("Reporte de Ingresos", from, to, incomes, total);
+        return buildPdf("Informe de Ingresos", from, to, incomes, total);
     }
 
     public byte[] generateExpenseReport(LocalDate from, LocalDate to) {
@@ -77,7 +79,11 @@ public class ReportService {
                 total = expenseRepository.sumAll(userId);
             }
         }
-        return buildPdf("Reporte de Gastos", from, to, expenses, total);
+        return buildPdf("Informe de Gastos", from, to, expenses, total);
+    }
+
+    private String formatCurrency(BigDecimal amount) {
+        return NumberFormat.getCurrencyInstance(Locale.forLanguageTag("es-ES")).format(amount);
     }
 
     private byte[] buildPdf(String title, LocalDate from, LocalDate to, List<?> items, BigDecimal total) {
@@ -122,8 +128,8 @@ public class ReportService {
             PdfPCell headerCell;
 
             String[] headers = isIncome
-                    ? new String[]{"Fecha", "Descripción", "Propiedad", "Tipo", "Monto"}
-                    : new String[]{"Fecha", "Descripción", "Propiedad", "Monto"};
+                    ? new String[]{"Fecha", "Descripción", "Propiedad", "Tipo", "Importe"}
+                    : new String[]{"Fecha", "Descripción", "Propiedad", "Importe"};
 
             for (String h : headers) {
                 headerCell = new PdfPCell(new Phrase(h, headerFont));
@@ -142,8 +148,13 @@ public class ReportService {
                     table.addCell(new PdfPCell(new Phrase(i.getDescription(), cellFont)));
                     table.addCell(new PdfPCell(new Phrase(
                             i.getProperty() != null ? i.getProperty().getName() : "-", cellFont)));
-                    table.addCell(new PdfPCell(new Phrase(i.getIncomeType().name(), cellFont)));
-                    table.addCell(new PdfPCell(new Phrase("$" + i.getAmount().toPlainString(), cellFont)));
+                    table.addCell(new PdfPCell(new Phrase(switch (i.getIncomeType()) {
+                        case RENT -> "Alquiler";
+                        case DEPOSIT -> "Fianza";
+                        case LATE_FEE -> "Recargo por demora";
+                        case OTHER -> "Otro";
+                    }, cellFont)));
+                    table.addCell(new PdfPCell(new Phrase(formatCurrency(i.getAmount()), cellFont)));
                 }
             } else {
                 for (Object obj : items) {
@@ -152,14 +163,14 @@ public class ReportService {
                     table.addCell(new PdfPCell(new Phrase(e.getDescription(), cellFont)));
                     table.addCell(new PdfPCell(new Phrase(
                             e.getProperty() != null ? e.getProperty().getName() : "-", cellFont)));
-                    table.addCell(new PdfPCell(new Phrase("$" + e.getAmount().toPlainString(), cellFont)));
+                    table.addCell(new PdfPCell(new Phrase(formatCurrency(e.getAmount()), cellFont)));
                 }
             }
 
             document.add(table);
 
             Font totalFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13, new Color(59, 130, 246));
-            Paragraph totalPara = new Paragraph("Total: $" + total.toPlainString(), totalFont);
+            Paragraph totalPara = new Paragraph("Total: " + formatCurrency(total), totalFont);
             totalPara.setAlignment(Element.ALIGN_RIGHT);
             document.add(totalPara);
         }
