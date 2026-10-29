@@ -4,9 +4,10 @@
 
 1. Hacer copia de seguridad de MySQL y confirmar que puede restaurarse.
 2. Configurar `JWT_SECRET` en el entorno del backend con una clave aleatoria propia de al menos 32 bytes. Por ejemplo, generar una fuera del repositorio con `openssl rand -base64 48`. No pegarla en commits, PRs o logs. Al cambiarla se cerrarán las sesiones existentes.
-3. El backend ya no crea el administrador predeterminado. Los usuarios existentes permanecen: revisar y cambiar por el procedimiento administrativo las credenciales de cualquier administrador creado anteriormente con datos predeterminados. Para nuevas instalaciones se puede habilitar temporalmente `APP_BOOTSTRAP_ADMIN_ENABLED=true`, junto con `APP_BOOTSTRAP_ADMIN_EMAIL` y `APP_BOOTSTRAP_ADMIN_PASSWORD` (mínimo 16 caracteres); deshabilitarlo después.
-4. Revisar las nuevas tablas (`recurring_rule`, `payment_occurrence`, `lease`, `property_document`) y columnas de inversión, archivo, idempotencia y vínculo a vencimientos. El proyecto mantiene `spring.jpa.hibernate.ddl-auto=update`: son adiciones de esquema y no se eliminan registros. En una base con restricciones de DDL, aplicar las adiciones mediante el proceso de migración del entorno antes del despliegue. Las columnas `archived` tienen default false para preservar el historial.
-5. Desplegar primero el backend y después el frontend compañero. No volver a una versión antigua del backend después de archivar registros: esa versión no respeta el archivo en los totales.
+3. Configurar `TZ=Europe/Madrid` si el servidor usa UTC, para que los vencimientos por día y los totales de mes coincidan con la hora española.
+4. El backend ya no crea el administrador predeterminado. Los usuarios existentes permanecen: revisar y cambiar por el procedimiento administrativo las credenciales de cualquier administrador creado anteriormente con datos predeterminados. Para nuevas instalaciones se puede habilitar temporalmente `APP_BOOTSTRAP_ADMIN_ENABLED=true`, junto con `APP_BOOTSTRAP_ADMIN_EMAIL` y `APP_BOOTSTRAP_ADMIN_PASSWORD` (mínimo 16 caracteres); deshabilitarlo después.
+5. Revisar las nuevas tablas (`recurring_rule`, `payment_occurrence`, `lease`, `property_document`) y columnas de inversión, archivo, idempotencia y vínculo a vencimientos. El proyecto mantiene `spring.jpa.hibernate.ddl-auto=update`: son adiciones de esquema y no se eliminan registros. En una base con restricciones de DDL, aplicar las adiciones mediante el proceso de migración del entorno antes del despliegue. Las columnas `archived` tienen default false para preservar el historial.
+6. Desplegar primero el backend y después el frontend compañero. No volver a una versión antigua del backend después de archivar registros: esa versión no respeta el archivo en los totales.
 
 ## Comportamiento
 

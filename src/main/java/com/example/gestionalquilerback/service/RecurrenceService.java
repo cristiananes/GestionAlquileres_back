@@ -81,9 +81,10 @@ public class RecurrenceService {
         var rule = authorized(id, true); // Serializes confirmations, including the first one, across application instances.
         if (rule.isArchived()) throw new IllegalArgumentException("Restaura la recurrencia antes de confirmar pagos");
         if (req.getPaymentDate().isAfter(LocalDate.now())) throw new IllegalArgumentException("Un pago realizado no puede tener fecha futura");
-        if (!RecurrenceDates.between(rule.getStartDate(), rule.getEndDate(), rule.getFrequency(), req.getDueDate(), req.getDueDate(), rule.getDayOfMonth()).contains(req.getDueDate()))
+        var known = occurrences.findByRuleIdAndDueDate(id, req.getDueDate());
+        if (known.isEmpty() && !RecurrenceDates.between(rule.getStartDate(), rule.getEndDate(), rule.getFrequency(), req.getDueDate(), req.getDueDate(), rule.getDayOfMonth()).contains(req.getDueDate()))
             throw new IllegalArgumentException("La fecha no corresponde a un vencimiento de esta recurrencia");
-        var occurrence = occurrences.findByRuleIdAndDueDate(id, req.getDueDate()).orElseGet(() -> occurrences.saveAndFlush(PaymentOccurrence.builder().rule(rule).dueDate(req.getDueDate()).amountDue(rule.getAmount()).build()));
+        var occurrence = known.orElseGet(() -> occurrences.saveAndFlush(PaymentOccurrence.builder().rule(rule).dueDate(req.getDueDate()).amountDue(rule.getAmount()).build()));
         var duplicateIncome = incomes.findByClientRequestIdAndUserId(req.getClientRequestId(), rule.getUser().getId());
         var duplicateExpense = expenses.findByClientRequestIdAndUserId(req.getClientRequestId(), rule.getUser().getId());
         if (duplicateIncome.isPresent() || duplicateExpense.isPresent()) {
