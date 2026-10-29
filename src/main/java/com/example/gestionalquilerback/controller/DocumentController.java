@@ -20,6 +20,7 @@ public class DocumentController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(d.getFilename(), StandardCharsets.UTF_8).build().toString())
                 .header("X-Content-Type-Options", "nosniff").header(HttpHeaders.CACHE_CONTROL, "no-store").body(d.getData());
     }
+    @PostMapping("/documents/{id}/archive") public void archiveRecoverably(@PathVariable Long id) { service.archive(id, true); }
     @DeleteMapping("/documents/{id}") public void archive(@PathVariable Long id) { service.archive(id, true); }
     @PostMapping("/documents/{id}/restore") public void restore(@PathVariable Long id) { service.archive(id, false); }
 }

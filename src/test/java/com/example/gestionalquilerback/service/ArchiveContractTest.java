@@ -32,10 +32,10 @@ class ArchiveContractTest {
         var active = service.findAll(null,null,null).getFirst();
         assertFalse(active.isArchived());
         assertTrue(service.findAll(null,null,null,true).isEmpty());
-        service.delete(active.getId());
+        var mvc = MockMvcBuilders.standaloneSetup(new IncomeController(service)).build();
+        mvc.perform(post("/api/incomes/" + active.getId() + "/archive")).andExpect(status().isNoContent());
         assertTrue(service.findAll(null,null,null).isEmpty());
         assertTrue(service.findAll(null,null,null,true).getFirst().isArchived());
-        var mvc = MockMvcBuilders.standaloneSetup(new IncomeController(service)).build();
         mvc.perform(post("/api/incomes/" + active.getId() + "/restore")).andExpect(status().isNoContent());
         assertTrue(service.findAll(null,null,null,true).isEmpty());
         assertFalse(service.findAll(null,null,null).getFirst().isArchived());
