@@ -153,6 +153,7 @@ public class PropertyService {
         }
         return PropertyResponse.builder()
                 .id(entity.getId())
+                .archived(entity.isArchived())
                 .name(entity.getName())
                 .address(entity.getAddress())
                 .purchasePrice(entity.getPurchasePrice())

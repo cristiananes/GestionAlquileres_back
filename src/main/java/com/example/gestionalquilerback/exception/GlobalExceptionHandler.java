@@ -76,6 +76,11 @@ public class GlobalExceptionHandler {
         return buildResponse(HttpStatus.BAD_REQUEST, "Formato de fecha o identificador no válido");
     }
 
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleMissingRoute(Exception ex) {
+        return buildResponse(HttpStatus.NOT_FOUND, "La ruta solicitada no existe en esta versión del servidor");
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneral(Exception ex) {
         log.error("Unhandled exception", ex);

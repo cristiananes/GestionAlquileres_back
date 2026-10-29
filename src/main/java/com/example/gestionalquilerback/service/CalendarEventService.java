@@ -120,6 +120,7 @@ public class CalendarEventService {
     private CalendarEventResponse toResponse(CalendarEvent entity) {
         return CalendarEventResponse.builder()
                 .id(entity.getId())
+                .archived(entity.isArchived())
                 .propertyId(entity.getProperty() != null ? entity.getProperty().getId() : null)
                 .propertyName(entity.getProperty() != null ? entity.getProperty().getName() : null)
                 .title(entity.getTitle())
