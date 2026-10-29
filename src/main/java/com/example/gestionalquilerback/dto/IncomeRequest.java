@@ -16,7 +16,7 @@ public class IncomeRequest {
     private String clientRequestId;
     private Long propertyId;
 
-    @NotNull @Positive
+    @NotNull @Positive @jakarta.validation.constraints.Digits(integer = 8, fraction = 2)
     private BigDecimal amount;
 
     @NotBlank

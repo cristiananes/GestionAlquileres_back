@@ -17,6 +17,7 @@ class RecurringPaymentsIntegrationTest {
     @Autowired RecurrenceService service;
     @Autowired UserRepository users;
     @Autowired IncomeRepository incomes;
+    @Autowired IncomeService incomeService;
     @BeforeEach void user() {
         var user = users.save(User.builder().name("Owner").email("recurring@test.example").password("test").role(Role.USER).build());
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(user,null,java.util.List.of()));
@@ -44,5 +45,15 @@ class RecurringPaymentsIntegrationTest {
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(other,null,java.util.List.of()));
         assertThrows(com.example.gestionalquilerback.exception.ResourceNotFoundException.class,()->service.pay(rule.id(),PaymentRequest.builder().dueDate(today).paymentDate(today).amount(BigDecimal.TEN).clientRequestId("not-owner").build()));
         assertEquals(0,service.upcoming(null,today,today).size());
+    }
+    @Test void archivingReopensTheDebtAndRestoreCannotOverpayIt() {
+        var today = LocalDate.now();
+        var rule = service.create(RecurringRuleRequest.builder().kind(MovementKind.INCOME).frequency(RecurrenceFrequency.MONTHLY).amount(new BigDecimal("100")).description("Rent").startDate(today).incomeType(IncomeType.RENT).clientRequestId("archive-rule").build());
+        service.pay(rule.id(), PaymentRequest.builder().dueDate(today).paymentDate(today).amount(new BigDecimal("100")).clientRequestId("archive-payment").build());
+        var original = incomes.findAll().getFirst();
+        incomeService.delete(original.getId());
+        assertEquals(0,new BigDecimal("100").compareTo(service.upcoming(null,today,today).getFirst().remaining()));
+        service.pay(rule.id(), PaymentRequest.builder().dueDate(today).paymentDate(today).amount(new BigDecimal("100")).clientRequestId("replacement-payment").build());
+        assertThrows(IllegalArgumentException.class,()->incomeService.restore(original.getId()));
     }
 }

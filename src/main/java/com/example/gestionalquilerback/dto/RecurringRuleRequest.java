@@ -9,7 +9,7 @@ public class RecurringRuleRequest {
     private Long propertyId;
     @NotNull private MovementKind kind;
     @NotNull private RecurrenceFrequency frequency;
-    @NotNull @Positive @Digits(integer = 10, fraction = 2) private BigDecimal amount;
+    @NotNull @Positive @Digits(integer = 8, fraction = 2) private BigDecimal amount;
     @NotBlank @Size(max = 250) private String description;
     @NotNull private LocalDate startDate;
     private LocalDate endDate;

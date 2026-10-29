@@ -49,6 +49,7 @@ public class IncomeService {
     }
 
     public IncomeResponse create(IncomeRequest request) {
+        if (request.getIncomeDate().isAfter(LocalDate.now())) throw new IllegalArgumentException("Para fechas futuras usa un vencimiento previsto en Recurrencias");
         if (request.getClientRequestId() != null) {
             var existing = repository.findByClientRequestIdAndUserId(request.getClientRequestId(), securityUtil.getCurrentUserId());
             if (existing.isPresent()) return toResponse(existing.get());

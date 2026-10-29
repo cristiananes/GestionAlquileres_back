@@ -66,11 +66,6 @@ public class PropertyService {
         Property entity = findEntity(id);
         entity.setName(request.getName());
         entity.setAddress(request.getAddress());
-        entity.setPurchasePrice(request.getPurchasePrice());
-        entity.setPurchaseCosts(request.getPurchaseCosts());
-        entity.setRenovationCosts(request.getRenovationCosts());
-        entity.setFurnitureCosts(request.getFurnitureCosts());
-        entity.setCashInvested(request.getCashInvested());
         entity.setCity(request.getCity());
         entity.setPropertyType(request.getPropertyType());
         entity.setAreaM2(request.getAreaM2());
@@ -81,6 +76,16 @@ public class PropertyService {
         entity.setHasParking(request.getHasParking());
         entity.setDescription(request.getDescription());
         entity.setImageUrl(request.getImageUrl() != null && !request.getImageUrl().isBlank() ? request.getImageUrl() : null);
+        return toResponse(repository.save(entity));
+    }
+
+    public PropertyResponse updateInvestment(Long id, com.example.gestionalquilerback.dto.PropertyInvestmentRequest request) {
+        var entity = findEntity(id);
+        entity.setPurchasePrice(request.getPurchasePrice());
+        entity.setPurchaseCosts(request.getPurchaseCosts());
+        entity.setRenovationCosts(request.getRenovationCosts());
+        entity.setFurnitureCosts(request.getFurnitureCosts());
+        entity.setCashInvested(request.getCashInvested());
         return toResponse(repository.save(entity));
     }
 

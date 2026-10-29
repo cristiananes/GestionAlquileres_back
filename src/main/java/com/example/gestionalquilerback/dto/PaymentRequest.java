@@ -7,6 +7,6 @@ import java.time.LocalDate;
 public class PaymentRequest {
     @NotNull private LocalDate dueDate;
     @NotNull private LocalDate paymentDate;
-    @NotNull @Positive @Digits(integer = 10, fraction = 2) private BigDecimal amount;
+    @NotNull @Positive @Digits(integer = 8, fraction = 2) private BigDecimal amount;
     @NotBlank @Size(max = 80) private String clientRequestId;
 }

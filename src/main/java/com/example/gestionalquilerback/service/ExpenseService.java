@@ -49,6 +49,7 @@ public class ExpenseService {
     }
 
     public ExpenseResponse create(ExpenseRequest request) {
+        if (request.getExpenseDate().isAfter(LocalDate.now())) throw new IllegalArgumentException("Para fechas futuras usa un vencimiento previsto en Recurrencias");
         if (request.getClientRequestId() != null) {
             var existing = repository.findByClientRequestIdAndUserId(request.getClientRequestId(), securityUtil.getCurrentUserId());
             if (existing.isPresent()) return toResponse(existing.get());

@@ -10,9 +10,9 @@ public class LeaseRequest {
     @Size(max = 40) private String tenantPhone;
     @NotNull private LocalDate startDate;
     private LocalDate endDate;
-    @NotNull @Positive @Digits(integer = 10, fraction = 2) private BigDecimal monthlyRent;
+    @NotNull @Positive @Digits(integer = 8, fraction = 2) private BigDecimal monthlyRent;
     @PositiveOrZero private BigDecimal depositAmount;
     @Min(1) @Max(31) private int paymentDay;
     private boolean generateRecurrence;
-    @NotBlank @Size(max = 80) private String clientRequestId;
+    @NotBlank @Size(max = 70) private String clientRequestId;
 }

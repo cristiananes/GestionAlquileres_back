@@ -89,6 +89,11 @@ public class RecurrenceService {
         if (duplicateIncome.isPresent() || duplicateExpense.isPresent()) {
             Long linked = duplicateIncome.isPresent() ? duplicateIncome.get().getOccurrenceId() : duplicateExpense.get().getOccurrenceId();
             if (!occurrence.getId().equals(linked)) throw new IllegalArgumentException("La operación ya se utilizó para otro vencimiento");
+            var duplicateAmount = duplicateIncome.isPresent() ? duplicateIncome.get().getAmount() : duplicateExpense.get().getAmount();
+            var duplicateDate = duplicateIncome.isPresent() ? duplicateIncome.get().getIncomeDate() : duplicateExpense.get().getExpenseDate();
+            var archived = duplicateIncome.isPresent() ? duplicateIncome.get().isArchived() : duplicateExpense.get().isArchived();
+            if (archived || duplicateAmount.compareTo(req.getAmount()) != 0 || !duplicateDate.equals(req.getPaymentDate()))
+                throw new IllegalArgumentException("Esta operación ya se registró con otros datos o está archivada. Revisa los movimientos antes de registrar un nuevo pago.");
             return occurrence(rule, req.getDueDate(), occurrence);
         }
         if (req.getAmount().compareTo(occurrence.getAmountDue().subtract(paid(rule, occurrence))) > 0) throw new IllegalArgumentException("El importe supera lo pendiente");
