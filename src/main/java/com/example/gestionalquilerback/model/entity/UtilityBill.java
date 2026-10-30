@@ -11,6 +11,7 @@ public class UtilityBill {
  @ManyToOne(optional=false) private User user;
  @Column(nullable=false,length=80,unique=true) private String clientRequestId;
  @Column(nullable=false,length=64,unique=true) private String fingerprint;
+ @Column(nullable=false,length=64) private String requestHash;
  @Column(nullable=false,length=30) private String supply;
  @Column(nullable=false,length=120) private String provider;
  @Column(nullable=false,length=100) private String reference;

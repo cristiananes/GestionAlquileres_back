@@ -36,6 +36,7 @@ class UtilityBillsIntegrationTest {
  @Test void reviewDoesNotCreateCashAndPaymentsArePartialIdempotentAndBounded() throws Exception {
   var req=request("create","ref1"); assertEquals(2,service.preview(req).size()); assertEquals(0,incomes.count());
   var b=service.create(req,new MockMultipartFile("file","luz.pdf","application/pdf","%PDF-1.7".getBytes())); assertEquals(b.id(),service.create(req,null).id());
+  assertThrows(IllegalArgumentException.class,()->service.create(request("create","changed-ref"),null));
   assertEquals(0,incomes.count()); assertEquals(0,expenses.count());
   var share=b.shares().getFirst().id();
   service.pay(b.id(),share,payment("partial","10.00",null)); service.pay(b.id(),share,payment("partial","10.00",null)); assertEquals(1,incomes.count());

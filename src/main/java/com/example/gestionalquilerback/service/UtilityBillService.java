@@ -33,10 +33,10 @@ public class UtilityBillService {
  public UtilityBillResponse create(UtilityBillRequest r,MultipartFile file) throws java.io.IOException {
   var property=properties.findEntity(r.propertyId()); if(property.isArchived()) throw new IllegalArgumentException("Restaura primero la propiedad");
   var key=hash(security.getCurrentUserId()+":"+r.clientRequestId());
-  var existing=bills.findByClientRequestIdAndUserId(key,security.getCurrentUserId()); if(existing.isPresent()) return response(existing.get());
+  var existing=bills.findByClientRequestIdAndUserId(key,security.getCurrentUserId()); if(existing.isPresent()) { if(!hash(r.toString()).equals(existing.get().getRequestHash())) throw new IllegalArgumentException("La operación ya se guardó con otros datos. Recarga los recibos antes de reintentar."); return response(existing.get()); }
   var parts=UtilitySplit.calculate(r); var fingerprint=fingerprint(r.propertyId(),r.provider(),r.reference());
   if(bills.findByFingerprint(fingerprint).isPresent()) throw new IllegalArgumentException("Ya hay un recibo con este proveedor y referencia en la propiedad");
-  var b=UtilityBill.builder().user(security.getCurrentUser()).property(property).clientRequestId(key).fingerprint(fingerprint)
+  var b=UtilityBill.builder().user(security.getCurrentUser()).property(property).clientRequestId(key).fingerprint(fingerprint).requestHash(hash(r.toString()))
    .supply(r.supply().trim()).provider(r.provider().trim()).reference(r.reference().trim()).amount(r.amount()).periodFrom(r.periodFrom()).periodTo(r.periodTo()).dueDate(r.dueDate())
    .method(r.method()).roomCount(r.roomCount()).vacancy(r.vacancy()).build();
   if(file!=null) { var doc=documents.upload(property.getId(),null,null,file); b.setDocument(documents.entity(doc.id())); }
