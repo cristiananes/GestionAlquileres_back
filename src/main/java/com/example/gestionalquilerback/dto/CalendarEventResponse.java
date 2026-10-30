@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class CalendarEventResponse {
     private Long id;
+    private boolean archived;
     private Long propertyId;
     private String propertyName;
     private String title;

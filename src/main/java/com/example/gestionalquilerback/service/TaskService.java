@@ -103,6 +103,7 @@ public class TaskService {
     private TaskResponse toResponse(Task entity) {
         return TaskResponse.builder()
                 .id(entity.getId())
+                .archived(entity.isArchived())
                 .propertyId(entity.getProperty() != null ? entity.getProperty().getId() : null)
                 .propertyName(entity.getProperty() != null ? entity.getProperty().getName() : null)
                 .title(entity.getTitle())

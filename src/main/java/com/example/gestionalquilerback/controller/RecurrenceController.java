@@ -17,6 +17,7 @@ public class RecurrenceController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) { return service.upcoming(propertyId, from, to); }
     @PostMapping("/{id}/payments") public OccurrenceResponse pay(@PathVariable Long id, @Valid @RequestBody PaymentRequest request) { return service.pay(id, request); }
     @PostMapping("/{id}/finish") public void finish(@PathVariable Long id) { service.finish(id); }
+    @PostMapping("/{id}/archive") public void archiveRecoverably(@PathVariable Long id) { service.archive(id, true); }
     @DeleteMapping("/{id}") public void archive(@PathVariable Long id) { service.archive(id, true); }
     @PostMapping("/{id}/restore") public void restore(@PathVariable Long id) { service.archive(id, false); }
 }

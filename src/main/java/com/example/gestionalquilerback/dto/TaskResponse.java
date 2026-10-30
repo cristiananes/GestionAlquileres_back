@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class TaskResponse {
     private Long id;
+    private boolean archived;
     private Long propertyId;
     private String propertyName;
     private String title;

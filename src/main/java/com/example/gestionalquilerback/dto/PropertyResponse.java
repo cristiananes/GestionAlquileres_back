@@ -11,6 +11,7 @@ import java.util.List;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class PropertyResponse {
     private Long id;
+    private boolean archived;
     private String name;
     private String address;
     private String city;
