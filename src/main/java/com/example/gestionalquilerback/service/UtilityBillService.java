@@ -69,7 +69,7 @@ public class UtilityBillService {
    checkPending(s,r.amount()); i.setUtilityShareId(shareId); i.setIncomeType(IncomeType.UTILITY_REIMBURSEMENT); incomes.save(i);
   } else {
    checkPending(s,r.amount()); incomes.save(Income.builder().user(b.getUser()).property(b.getProperty()).utilityShareId(shareId).clientRequestId(key).amount(r.amount()).incomeDate(r.date())
-    .description(shortDescription("Reembolso "+b.getSupply()+" · "+b.getReference()+" · "+s.getName())).incomeType(IncomeType.UTILITY_REIMBURSEMENT).paymentMethod(PaymentMethod.TRANSFER).build());
+    .description(shortDescription("Reembolso "+b.getSupply()+" · "+b.getReference()+" · "+s.getName())).incomeType(IncomeType.UTILITY_REIMBURSEMENT).paymentMethod(r.paymentMethod()==null?PaymentMethod.TRANSFER:r.paymentMethod()).build());
   }
   return response(b);
  }

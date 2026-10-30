@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 public class ExpenseResponse {
     private Long id;
     private Long occurrenceId;
+    private Long utilityBillId;
     private boolean archived;
     private Long propertyId;
     private String propertyName;

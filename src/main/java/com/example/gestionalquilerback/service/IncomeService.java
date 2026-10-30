@@ -124,6 +124,7 @@ public class IncomeService {
                 .id(entity.getId())
                 .archived(entity.isArchived())
                 .occurrenceId(entity.getOccurrenceId())
+                .utilityShareId(entity.getUtilityShareId())
                 .propertyId(entity.getProperty() != null ? entity.getProperty().getId() : null)
                 .propertyName(entity.getProperty() != null ? entity.getProperty().getName() : null)
                 .amount(entity.getAmount())

@@ -32,14 +32,14 @@ class UtilityBillsIntegrationTest {
  @BeforeEach void setup() {owner=users.save(User.builder().name("Owner").email("utility-owner@test.example").password("test").role(Role.USER).build());login(owner); property=properties.save(Property.builder().user(owner).name("Piso").address("Calle").purchasePrice(new BigDecimal("100000")).build());}
  @AfterEach void logout() {SecurityContextHolder.clearContext();}
  UtilityBillRequest request(String key,String reference) {return new UtilityBillRequest(property.getId(),key,"Luz","Proveedor",reference,new BigDecimal("60.00"),LocalDate.now().minusDays(30),LocalDate.now(),LocalDate.now(),Method.EQUAL,2,Vacancy.OWNER,List.of(new Recipient("Ana","1",null,null,null,null,null,null,false),new Recipient("Luis","2",null,null,null,null,null,null,false)));}
- UtilityPaymentRequest payment(String key,String amount,Long movement) {return new UtilityPaymentRequest(new BigDecimal(amount),LocalDate.now(),key,movement);}
+ UtilityPaymentRequest payment(String key,String amount,Long movement) {return new UtilityPaymentRequest(new BigDecimal(amount),LocalDate.now(),key,movement,PaymentMethod.CASH);}
  @Test void reviewDoesNotCreateCashAndPaymentsArePartialIdempotentAndBounded() throws Exception {
   var req=request("create","ref1"); assertEquals(2,service.preview(req).size()); assertEquals(0,incomes.count());
   var b=service.create(req,new MockMultipartFile("file","luz.pdf","application/pdf","%PDF-1.7".getBytes())); assertEquals(b.id(),service.create(req,null).id());
   assertThrows(IllegalArgumentException.class,()->service.create(request("create","changed-ref"),null));
   assertEquals(0,incomes.count()); assertEquals(0,expenses.count());
   var share=b.shares().getFirst().id();
-  service.pay(b.id(),share,payment("partial","10.00",null)); service.pay(b.id(),share,payment("partial","10.00",null)); assertEquals(1,incomes.count());
+  service.pay(b.id(),share,payment("partial","10.00",null)); service.pay(b.id(),share,payment("partial","10.00",null)); assertEquals(1,incomes.count()); assertEquals(PaymentMethod.CASH,incomes.findAll().getFirst().getPaymentMethod());
   assertThrows(IllegalArgumentException.class,()->service.pay(b.id(),share,payment("too-much","21.00",null)));
   var complete=service.pay(b.id(),share,payment("rest","20.00",null)); assertEquals("PAID",complete.shares().getFirst().status());
   assertThrows(IllegalArgumentException.class,()->service.archive(b.id(),true));
@@ -70,4 +70,17 @@ class UtilityBillsIntegrationTest {
   assertThrows(ResourceNotFoundException.class,()->service.pay(b.id(),b.shares().getFirst().id(),payment("steal","1.00",null)));
   assertThrows(ResourceNotFoundException.class,()->documents.entity(b.documentId()));
  }
+ @Test void multipartEndpointBindsAndValidatesTheReviewedRequest() throws Exception {
+  var mvc=org.springframework.test.web.servlet.setup.MockMvcBuilders.standaloneSetup(new com.example.gestionalquilerback.controller.UtilityBillController(service)).setControllerAdvice(new com.example.gestionalquilerback.exception.GlobalExceptionHandler()).build();
+  String json="""
+   {"propertyId":%d,"clientRequestId":"http-create","supply":"Agua","provider":"Proveedor","reference":"HTTP1","amount":12.34,"periodFrom":"2026-01-01","periodTo":"2026-01-31","dueDate":"2026-02-10","method":"EQUAL","roomCount":1,"vacancy":"OWNER","recipients":[{"name":"Ana","owner":false}]}
+   """.formatted(property.getId());
+  mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/utility-bills").file(new MockMultipartFile("request","request.json","application/json",json.getBytes(java.nio.charset.StandardCharsets.UTF_8))).file(new MockMultipartFile("file","agua.pdf","application/pdf","%PDF-1.7".getBytes())))
+   .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk())
+   .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.shares[0].amount").value(12.34));
+  assertEquals(0,incomes.count());assertEquals(0,expenses.count());
+  mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/utility-bills").file(new MockMultipartFile("request","request.json","application/json",json.replace("12.34","-1").getBytes(java.nio.charset.StandardCharsets.UTF_8))))
+   .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isBadRequest());
+ }
+
 }

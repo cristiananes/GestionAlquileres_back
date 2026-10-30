@@ -122,6 +122,7 @@ public class ExpenseService {
                 .id(entity.getId())
                 .archived(entity.isArchived())
                 .occurrenceId(entity.getOccurrenceId())
+                .utilityBillId(entity.getUtilityBillId())
                 .propertyId(entity.getProperty() != null ? entity.getProperty().getId() : null)
                 .propertyName(entity.getProperty() != null ? entity.getProperty().getName() : null)
                 .amount(entity.getAmount())
