@@ -39,7 +39,7 @@ public class UtilityBillService {
   var b=UtilityBill.builder().user(security.getCurrentUser()).property(property).clientRequestId(key).fingerprint(fingerprint).requestHash(hash(r.toString()))
    .supply(r.supply().trim()).provider(r.provider().trim()).reference(r.reference().trim()).amount(r.amount()).periodFrom(r.periodFrom()).periodTo(r.periodTo()).dueDate(r.dueDate())
    .method(r.method()).roomCount(r.roomCount()).vacancy(r.vacancy()).build();
-  if(file!=null) { var doc=documents.upload(property.getId(),null,null,file); b.setDocument(documents.entity(doc.id())); }
+  if(file!=null) { var doc=documents.upload(property.getId(),null,null,file); b.setDocument(documents.entity(doc.id())); b.setDocumentFilename(doc.filename()); }
   bills.saveAndFlush(b);
   for(var part:parts) {var person=part.recipient(); shares.save(UtilityShare.builder().bill(b).name(person.name().trim()).room(person.room()).email(person.email()).phone(person.phone()).roomNumber(person.roomNumber())
    .stayFrom(person.from()).stayTo(person.to()).percent(person.percent()).owner(person.owner()).amount(part.amount()).build()); }
@@ -84,7 +84,7 @@ public class UtilityBillService {
   if(r.movementId()!=null) {
    e=expenses.lockMovement(r.movementId()).orElseThrow(()->new ResourceNotFoundException("Gasto",r.movementId()));
    if(!e.getUser().getId().equals(security.getCurrentUserId())||e.getProperty()==null||!b.getProperty().getId().equals(e.getProperty().getId())||e.isArchived()||e.getUtilityBillId()!=null||e.getOccurrenceId()!=null||e.getAmount().compareTo(b.getAmount())!=0||!e.getExpenseDate().equals(r.date())||e.getCategory()!=ExpenseCategory.UTILITIES) throw new IllegalArgumentException("Selecciona un gasto puntual de Suministros, de esta propiedad, con el mismo importe y fecha, sin vincular y no archivado");
-  } else e=Expense.builder().user(b.getUser()).property(b.getProperty()).clientRequestId(hash("utility-expense:"+id)).amount(b.getAmount()).expenseDate(r.date()).category(ExpenseCategory.UTILITIES).description(b.getSupply()+" · "+b.getProvider()+" · "+b.getReference()).build();
+  } else e=Expense.builder().user(b.getUser()).property(b.getProperty()).clientRequestId(hash("utility-expense:"+id)).amount(b.getAmount()).expenseDate(r.date()).category(ExpenseCategory.UTILITIES).description(shortDescription(b.getSupply()+" · "+b.getProvider()+" · "+b.getReference())).build();
   e.setUtilityBillId(id); expenses.save(e); return response(b);
  }
  public void archive(Long id,boolean archived) {
@@ -110,7 +110,7 @@ public class UtilityBillService {
    var status=s.isOwner()?"OWNER":pending.signum()==0?"PAID":paid.signum()>0?"PARTIAL":b.getDueDate().isBefore(LocalDate.now())?"OVERDUE":"PENDING";
    return new UtilityBillResponse.Share(s.getId(),s.getName(),s.getRoom(),s.getEmail(),s.getPhone(),s.getRoomNumber(),s.getStayFrom(),s.getStayTo(),s.getPercent(),s.isOwner(),s.getAmount(),paid,s.isOwner()?BigDecimal.ZERO:pending,status,payments);
   }).toList();
-  return new UtilityBillResponse(b.getId(),b.getProperty().getId(),b.getProperty().getName(),b.getSupply(),b.getProvider(),b.getReference(),b.getAmount(),b.getPeriodFrom(),b.getPeriodTo(),b.getDueDate(),b.getMethod(),b.getRoomCount(),b.getVacancy(),b.getDocument()==null?null:b.getDocument().getId(),b.getDocument()==null?null:b.getDocument().getFilename(),b.isArchived(),expense==null?null:expense.getId(),expense!=null&&!expense.isArchived(),parts);
+  return new UtilityBillResponse(b.getId(),b.getProperty().getId(),b.getProperty().getName(),b.getSupply(),b.getProvider(),b.getReference(),b.getAmount(),b.getPeriodFrom(),b.getPeriodTo(),b.getDueDate(),b.getMethod(),b.getRoomCount(),b.getVacancy(),b.getDocument()==null?null:b.getDocument().getId(),b.getDocumentFilename(),b.isArchived(),expense==null?null:expense.getId(),expense!=null&&!expense.isArchived(),parts);
  }
  private String fingerprint(Long property,String provider,String reference) {return hash(security.getCurrentUserId()+":"+property+":"+provider.trim().toLowerCase(Locale.ROOT)+":"+reference.trim().toLowerCase(Locale.ROOT));}
  private static String shortDescription(String value) {return value.substring(0,Math.min(value.length(),250));}

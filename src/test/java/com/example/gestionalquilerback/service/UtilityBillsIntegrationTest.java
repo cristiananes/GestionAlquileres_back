@@ -19,6 +19,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest @Transactional
 class UtilityBillsIntegrationTest {
  @Autowired UtilityBillService service;
+ @Autowired UtilityBillRepository billRepository;
+ @jakarta.persistence.PersistenceContext jakarta.persistence.EntityManager entityManager;
  @Autowired UserRepository users;
  @Autowired PropertyRepository properties;
  @Autowired IncomeRepository incomes;
@@ -81,6 +83,12 @@ class UtilityBillsIntegrationTest {
   assertEquals(0,incomes.count());assertEquals(0,expenses.count());
   mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/api/utility-bills").file(new MockMultipartFile("request","request.json","application/json",json.replace("12.34","-1").getBytes(java.nio.charset.StandardCharsets.UTF_8))))
    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isBadRequest());
+  var created=service.list(property.getId(),false).getFirst();
+  entityManager.flush();entityManager.clear();
+  var stored=billRepository.findById(created.id()).orElseThrow();
+  assertFalse(org.hibernate.Hibernate.isInitialized(stored.getDocument()));
+  assertEquals("agua.pdf",service.list(property.getId(),false).getFirst().filename());
+  assertFalse(org.hibernate.Hibernate.isInitialized(stored.getDocument()),"Listing receipts must not load all attachment bytes");
  }
 
 }

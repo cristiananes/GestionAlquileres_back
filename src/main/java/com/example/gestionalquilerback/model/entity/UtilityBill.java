@@ -22,6 +22,7 @@ public class UtilityBill {
  @Enumerated(EnumType.STRING) @Column(nullable=false) private Method method;
  private int roomCount;
  @Enumerated(EnumType.STRING) private Vacancy vacancy;
- @ManyToOne private PropertyDocument document;
+ @ManyToOne(fetch=FetchType.LAZY) private PropertyDocument document;
+ @Column(length=200) private String documentFilename;
  @Column(nullable=false) private boolean archived;
 }
