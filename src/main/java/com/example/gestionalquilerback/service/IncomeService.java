@@ -22,6 +22,7 @@ public class IncomeService {
     private final PropertyService propertyService;
     private final SecurityUtil securityUtil;
     private final PaymentIntegrity paymentIntegrity;
+    private final UtilityIntegrity utilityIntegrity;
 
     public List<IncomeResponse> findAll(Long propertyId, LocalDate from, LocalDate to) {
         return findAll(propertyId, from, to, false);
@@ -70,6 +71,7 @@ public class IncomeService {
     public IncomeResponse update(Long id, IncomeRequest request) {
         Income entity = findEntity(id);
         if (entity.getOccurrenceId() != null) throw new IllegalArgumentException("Este pago procede de un vencimiento. Para corregirlo, archívalo y registra el pago correcto desde Recurrencias.");
+        if (entity.getUtilityShareId() != null) throw new IllegalArgumentException("Este reembolso pertenece a un recibo. Archívalo y registra el correcto desde Suministros.");
         entity.setProperty(request.getPropertyId() != null ? propertyService.findEntity(request.getPropertyId()) : null);
         entity.setAmount(request.getAmount());
         entity.setDescription(request.getDescription());
@@ -81,6 +83,7 @@ public class IncomeService {
 
     public void delete(Long id) {
         Income entity = findEntity(id);
+        utilityIntegrity.lock(entity.getUtilityShareId(), entity.getId(), null);
         paymentIntegrity.lock(entity.getOccurrenceId(), null, true);
         entity.setArchived(true);
         repository.save(entity);
@@ -101,6 +104,7 @@ public class IncomeService {
 
     public void restore(Long id) {
         var entity = findEntity(id);
+        if (entity.isArchived()) utilityIntegrity.lock(entity.getUtilityShareId(), entity.getId(), entity.getAmount());
         if (entity.isArchived()) paymentIntegrity.lock(entity.getOccurrenceId(), entity.getAmount(), true);
         entity.setArchived(false);
         repository.save(entity);

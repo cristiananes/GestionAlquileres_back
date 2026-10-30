@@ -21,6 +21,8 @@ public class Income {
 
     private Long occurrenceId;
 
+    private Long utilityShareId;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

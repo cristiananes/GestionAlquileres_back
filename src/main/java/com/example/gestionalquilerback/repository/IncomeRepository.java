@@ -10,6 +10,12 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface IncomeRepository extends JpaRepository<Income, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select m from Income m where m.id=:id")
+    java.util.Optional<Income> lockMovement(@org.springframework.data.repository.query.Param("id") Long id);
+
+    java.util.List<Income> findByUtilityShareId(Long utilityShareId);
+
 
     List<Income> findByPropertyId(Long propertyId);
 
