@@ -22,6 +22,7 @@ public class ExpenseService {
     private final PropertyService propertyService;
     private final SecurityUtil securityUtil;
     private final PaymentIntegrity paymentIntegrity;
+    private final SettlementIntegrity settlementIntegrity;
     private final com.example.gestionalquilerback.repository.UtilityBillRepository utilityBills;
 
     public List<ExpenseResponse> findAll(Long propertyId, LocalDate from, LocalDate to) {
@@ -68,7 +69,7 @@ public class ExpenseService {
     }
 
     public ExpenseResponse update(Long id, ExpenseRequest request) {
-        Expense entity = findEntity(id);
+        Expense entity = findMutable(id);
         if (entity.getOccurrenceId() != null) throw new IllegalArgumentException("Este pago procede de un vencimiento. Para corregirlo, archívalo y registra el pago correcto desde Recurrencias.");
         if (entity.getUtilityBillId() != null) throw new IllegalArgumentException("Este gasto pertenece a un recibo y su importe es fijo. Archívalo para corregir el recibo desde Suministros.");
         entity.setProperty(request.getPropertyId() != null ? propertyService.findEntity(request.getPropertyId()) : null);
@@ -80,7 +81,7 @@ public class ExpenseService {
     }
 
     public void delete(Long id) {
-        Expense entity = findEntity(id);
+        Expense entity = findMutable(id);
         if (entity.getUtilityBillId() != null) utilityBills.lockById(entity.getUtilityBillId()).orElseThrow();
         paymentIntegrity.lock(entity.getOccurrenceId(), null, false);
         entity.setArchived(true);
@@ -101,11 +102,19 @@ public class ExpenseService {
     }
 
     public void restore(Long id) {
-        var entity = findEntity(id);
+        var entity = findMutable(id);
         if (entity.getUtilityBillId() != null && utilityBills.lockById(entity.getUtilityBillId()).orElseThrow().isArchived()) throw new IllegalArgumentException("Restaura primero el recibo de suministros");
         if (entity.isArchived()) paymentIntegrity.lock(entity.getOccurrenceId(), entity.getAmount(), false);
         entity.setArchived(false);
         repository.save(entity);
+    }
+
+    private Expense findMutable(Long id) {
+        findEntity(id);
+        var entity=repository.lockMovement(id).orElseThrow();
+        settlementIntegrity.ensureFree("EXPENSE",id);
+        if(entity.getOwnerSettlementId()!=null) throw new IllegalArgumentException("Los honorarios vinculados se corrigen anulando su liquidación");
+        return entity;
     }
 
     public Expense findEntity(Long id) {
@@ -123,6 +132,7 @@ public class ExpenseService {
                 .archived(entity.isArchived())
                 .occurrenceId(entity.getOccurrenceId())
                 .utilityBillId(entity.getUtilityBillId())
+                .ownerSettlementId(entity.getOwnerSettlementId())
                 .propertyId(entity.getProperty() != null ? entity.getProperty().getId() : null)
                 .propertyName(entity.getProperty() != null ? entity.getProperty().getName() : null)
                 .amount(entity.getAmount())

@@ -14,8 +14,8 @@ class PeriodTotalsTest {
     private final IncomeRepository incomes = mock(IncomeRepository.class);
     private final ExpenseRepository expenses = mock(ExpenseRepository.class);
     private final PropertyService properties = mock(PropertyService.class);
-    private final IncomeService incomeService = new IncomeService(incomes, properties, security, mock(PaymentIntegrity.class), mock(UtilityIntegrity.class));
-    private final ExpenseService expenseService = new ExpenseService(expenses, properties, security, mock(PaymentIntegrity.class), mock(com.example.gestionalquilerback.repository.UtilityBillRepository.class));
+    private final IncomeService incomeService = new IncomeService(incomes, properties, security, mock(PaymentIntegrity.class), mock(SettlementIntegrity.class), mock(UtilityIntegrity.class));
+    private final ExpenseService expenseService = new ExpenseService(expenses, properties, security, mock(PaymentIntegrity.class), mock(SettlementIntegrity.class), mock(com.example.gestionalquilerback.repository.UtilityBillRepository.class));
 
     @Test
     void userTotalsRetainUserScopeWithOpenEndedDates() {
