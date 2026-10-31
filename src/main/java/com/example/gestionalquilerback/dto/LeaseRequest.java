@@ -5,6 +5,10 @@ import java.time.LocalDate;
 import java.math.BigDecimal;
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class LeaseRequest {
+    private Long roomId;
+    private com.example.gestionalquilerback.model.enums.RentalScope rentalScope;
+    private LocalDate occupancyFrom;
+    private LocalDate occupancyTo;
     @NotBlank @Size(max = 200) private String tenantName;
     @Email private String tenantEmail;
     @Size(max = 40) private String tenantPhone;

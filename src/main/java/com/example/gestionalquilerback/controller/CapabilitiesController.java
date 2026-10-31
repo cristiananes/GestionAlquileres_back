@@ -12,7 +12,7 @@ public class CapabilitiesController {
 
     @GetMapping("/api/capabilities")
     public Capabilities capabilities() {
-        return new Capabilities(2, List.of("safe-writes", "soft-archive", "investment", "recurrences", "leases", "documents", "filtered-reports", "utility-bills"), commit);
+        return new Capabilities(2, List.of("safe-writes", "soft-archive", "investment", "recurrences", "leases", "documents", "filtered-reports", "utility-bills", "rooms", "owner-settlements"), commit);
     }
 
     public record Capabilities(int apiVersion, List<String> features, String commit) {}

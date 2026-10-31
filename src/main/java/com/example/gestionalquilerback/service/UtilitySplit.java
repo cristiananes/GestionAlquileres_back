@@ -24,8 +24,11 @@ public final class UtilitySplit {
    if(sum.compareTo(new BigDecimal("100"))!=0) throw new IllegalArgumentException("Los porcentajes deben sumar 100");
   } else {
    if(r.roomCount()<1||r.roomCount()>50||r.vacancy()==null) throw new IllegalArgumentException("Indica habitaciones y política de vacantes");
+   var roomNumbers = r.roomNumbers()==null ? java.util.stream.IntStream.rangeClosed(1,r.roomCount()).boxed().toList() : r.roomNumbers();
+   var allowedRooms=new HashSet<>(roomNumbers);
+   if(allowedRooms.size()!=r.roomCount() || allowedRooms.size()!=roomNumbers.size() || allowedRooms.stream().anyMatch(n->n==null||n<1||n>50)) throw new IllegalArgumentException("Revisa el catálogo de habitaciones del reparto");
    if(people.stream().anyMatch(Recipient::owner)) throw new IllegalArgumentException("En el reparto por días el propietario se calcula automáticamente");
-   for(var person:people) if(person.roomNumber()==null||person.roomNumber()<1||person.roomNumber()>r.roomCount()||person.from()==null||person.to()==null||person.to().isBefore(person.from())||person.from().isAfter(r.periodTo())||person.to().isBefore(r.periodFrom())) throw new IllegalArgumentException("Revisa habitación y estancia de cada destinatario");
+   for(var person:people) if(person.roomNumber()==null||!allowedRooms.contains(person.roomNumber())||person.from()==null||person.to()==null||person.to().isBefore(person.from())||person.from().isAfter(r.periodTo())||person.to().isBefore(r.periodFrom())) throw new IllegalArgumentException("Revisa habitación y estancia de cada destinatario");
    int owner=people.size(); people.add(new Recipient("Propietario · vacantes","",null,null,null,null,null,null,true)); weights.add(BigDecimal.ZERO);
    for(LocalDate day=r.periodFrom(); !day.isAfter(r.periodTo()); day=day.plusDays(1)) {
     var active=new ArrayList<Integer>(); var rooms=new HashSet<Integer>();

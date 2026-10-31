@@ -25,6 +25,7 @@ public class UtilityBillService {
  private final PropertyService properties;
  private final DocumentService documents;
  private final SecurityUtil security;
+ private final SettlementIntegrity settlementIntegrity;
  public List<UtilityBillResponse> list(Long propertyId,boolean archived) {
   if(propertyId!=null) properties.findEntity(propertyId);
   return bills.findByUserIdOrderByIdDesc(security.getCurrentUserId()).stream().filter(b->b.isArchived()==archived && (propertyId==null||propertyId.equals(b.getProperty().getId()))).map(this::response).toList();
@@ -66,6 +67,7 @@ public class UtilityBillService {
    var i=incomes.lockMovement(r.movementId()).orElseThrow(()->new ResourceNotFoundException("Ingreso",r.movementId()));
    if(shareId.equals(i.getUtilityShareId()) && i.getUser().getId().equals(security.getCurrentUserId()) && !i.isArchived() && i.getAmount().compareTo(r.amount())==0 && i.getIncomeDate().equals(r.date())) return response(b);
    if(!i.getUser().getId().equals(security.getCurrentUserId())||i.getProperty()==null||!b.getProperty().getId().equals(i.getProperty().getId())||i.isArchived()||i.getUtilityShareId()!=null||i.getOccurrenceId()!=null||i.getAmount().compareTo(r.amount())!=0||!i.getIncomeDate().equals(r.date())||(i.getIncomeType()!=IncomeType.OTHER && i.getIncomeType()!=IncomeType.UTILITY_REIMBURSEMENT)) throw new IllegalArgumentException("Selecciona un ingreso puntual de esta propiedad, tipo Otro o Reembolso, con el mismo importe y fecha, sin vincular y no archivado");
+   settlementIntegrity.ensureFree("INCOME",i.getId());
    checkPending(s,r.amount()); i.setUtilityShareId(shareId); i.setIncomeType(IncomeType.UTILITY_REIMBURSEMENT); incomes.save(i);
   } else {
    checkPending(s,r.amount()); incomes.save(Income.builder().user(b.getUser()).property(b.getProperty()).utilityShareId(shareId).clientRequestId(key).amount(r.amount()).incomeDate(r.date())
@@ -85,6 +87,7 @@ public class UtilityBillService {
    e=expenses.lockMovement(r.movementId()).orElseThrow(()->new ResourceNotFoundException("Gasto",r.movementId()));
    if(!e.getUser().getId().equals(security.getCurrentUserId())||e.getProperty()==null||!b.getProperty().getId().equals(e.getProperty().getId())||e.isArchived()||e.getUtilityBillId()!=null||e.getOccurrenceId()!=null||e.getAmount().compareTo(b.getAmount())!=0||!e.getExpenseDate().equals(r.date())||e.getCategory()!=ExpenseCategory.UTILITIES) throw new IllegalArgumentException("Selecciona un gasto puntual de Suministros, de esta propiedad, con el mismo importe y fecha, sin vincular y no archivado");
   } else e=Expense.builder().user(b.getUser()).property(b.getProperty()).clientRequestId(hash("utility-expense:"+id)).amount(b.getAmount()).expenseDate(r.date()).category(ExpenseCategory.UTILITIES).description(shortDescription(b.getSupply()+" · "+b.getProvider()+" · "+b.getReference())).build();
+  if(e.getId()!=null) settlementIntegrity.ensureFree("EXPENSE",e.getId());
   e.setUtilityBillId(id); expenses.save(e); return response(b);
  }
  public void archive(Long id,boolean archived) {

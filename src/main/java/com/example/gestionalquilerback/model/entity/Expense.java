@@ -23,6 +23,8 @@ public class Expense {
     @Column(unique = true)
     private Long utilityBillId;
 
+    @Column(unique=true) private Long ownerSettlementId;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

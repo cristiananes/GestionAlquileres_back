@@ -31,4 +31,9 @@ class UtilitySplitTest {
   assertThrows(IllegalArgumentException.class,()->UtilitySplit.calculate(request("31.00",Method.DAYS,Vacancy.OWNER,List.of(person("A",1,FROM,TO,null),person("B",1,FROM,TO,null)))));
   assertThrows(IllegalArgumentException.class,()->UtilitySplit.calculate(request("0.00",Method.EQUAL,Vacancy.OWNER,List.of(person("A",null,null,null,null)))));
  }
+ @Test void registeredRoomNumbersMayHaveGapsWithoutInventingVacantRooms() {
+  var r=new UtilityBillRequest(1L,"stable","Luz","Proveedor","Factura",new BigDecimal("20.00"),FROM,TO,TO,Method.DAYS,2,Vacancy.OWNER,List.of(person("A",2,FROM,TO,null)),List.of(2,5));
+  var p=UtilitySplit.calculate(r);assertEquals(new BigDecimal("10.00"),p.getFirst().amount());assertEquals(new BigDecimal("10.00"),p.getLast().amount());
+ }
+
 }

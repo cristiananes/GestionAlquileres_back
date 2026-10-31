@@ -11,7 +11,8 @@ public record UtilityBillRequest(
  @NotNull @DecimalMin("0.01") @DecimalMax("9999999.99") @Digits(integer=7,fraction=2) BigDecimal amount,
  @NotNull LocalDate periodFrom, @NotNull LocalDate periodTo, @NotNull LocalDate dueDate,
  @NotNull Method method, @Min(1) @Max(50) int roomCount, @NotNull Vacancy vacancy,
- @NotEmpty @Size(max=100) List<@Valid Recipient> recipients) {
+ @NotEmpty @Size(max=100) List<@Valid Recipient> recipients, @Size(max=50) List<@Min(1) @Max(50) Integer> roomNumbers) {
+ public UtilityBillRequest(Long propertyId,String clientRequestId,String supply,String provider,String reference,BigDecimal amount,LocalDate periodFrom,LocalDate periodTo,LocalDate dueDate,Method method,int roomCount,Vacancy vacancy,List<Recipient> recipients) {this(propertyId,clientRequestId,supply,provider,reference,amount,periodFrom,periodTo,dueDate,method,roomCount,vacancy,recipients,null);}
  public enum Method { EQUAL, PERCENT, DAYS }
  public enum Vacancy { OWNER, OCCUPANTS }
  public record Recipient(@NotBlank @Size(max=120) String name, @Size(max=120) String room,

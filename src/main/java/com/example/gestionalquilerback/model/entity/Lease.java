@@ -8,6 +8,10 @@ public class Lease {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
     @ManyToOne(optional = false) private Property property;
     @ManyToOne(optional = false) private User user;
+    @ManyToOne(fetch=FetchType.LAZY) private Room room;
+    @Enumerated(EnumType.STRING) private com.example.gestionalquilerback.model.enums.RentalScope rentalScope;
+    private LocalDate occupancyFrom;
+    private LocalDate occupancyTo;
     @Column(nullable = false) private String tenantName;
     private String tenantEmail;
     private String tenantPhone;

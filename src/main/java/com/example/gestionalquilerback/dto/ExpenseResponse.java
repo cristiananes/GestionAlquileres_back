@@ -12,6 +12,7 @@ public class ExpenseResponse {
     private Long id;
     private Long occurrenceId;
     private Long utilityBillId;
+    private Long ownerSettlementId;
     private boolean archived;
     private Long propertyId;
     private String propertyName;
