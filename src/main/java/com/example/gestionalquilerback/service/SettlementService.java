@@ -36,7 +36,7 @@ public class SettlementService {
   var p=properties.findEntity(r.propertyId());if(p.isArchived())throw new IllegalArgumentException("Restaura primero la propiedad");
   var preview=calculate(r,true);
   if(r.previewToken()==null||!r.previewToken().equals(preview.reviewToken()))throw new IllegalArgumentException("Los datos o condiciones han cambiado. Revisa de nuevo el borrador antes de confirmar");
-  for(var old:settlements.findByPropertyIdOrderByIdDesc(r.propertyId())) if(!old.getStatus().equals("CANCELLED")&&!old.getPeriodTo().isBefore(r.from())&&!r.to().isBefore(old.getPeriodFrom())) throw new IllegalArgumentException("El periodo se solapa con la liquidación #"+old.getId()+". Anúlala para preparar una versión corregida");
+  for(var old:settlements.lockByProperty(r.propertyId())) if(!old.getStatus().equals("CANCELLED")&&!old.getPeriodTo().isBefore(r.from())&&!r.to().isBefore(old.getPeriodFrom())) throw new IllegalArgumentException("El periodo se solapa con la liquidación #"+old.getId()+". Anúlala para preparar una versión corregida");
   var s=settlements.save(OwnerSettlement.builder().property(p).user(security.getCurrentUser()).requestKey(key).requestHash(hash(r.toString())).periodFrom(r.from()).periodTo(r.to()).ownerName(preview.ownerName()).ownerEmail(preview.ownerEmail()).feeMode(preview.feeMode()).feeRate(preview.feeRate()).taxRate(preview.taxRate()).collectionMode(preview.collectionMode()).totalIncome(preview.totalIncome()).totalExpense(preview.totalExpense()).feeBase(preview.feeBase()).feeNet(preview.feeNet()).feeTax(preview.feeTax()).netToOwner(preview.netToOwner()).status("CONFIRMED").build());
   for(var item:preview.lines()) lines.save(SettlementLine.builder().settlement(s).activeKey(item.kind()+":"+item.movementId()).kind(item.kind()).movementId(item.movementId()).amount(item.amount()).movementDate(item.date()).description(item.description()).build());
   return response(s);
@@ -45,7 +45,7 @@ public class SettlementService {
   var p=properties.findEntity(r.propertyId());DateRangeValidator.validate(r.from(),r.to());
   if(ChronoUnit.DAYS.between(r.from(),r.to())>366)throw new IllegalArgumentException("La liquidación debe abarcar como máximo un año");
   if(new HashSet<>(r.incomeIds()).size()!=r.incomeIds().size()||new HashSet<>(r.expenseIds()).size()!=r.expenseIds().size())throw new IllegalArgumentException("No repitas movimientos");
-  var config=settings.findById(r.propertyId()).orElseThrow(()->new IllegalArgumentException("Configura el propietario y los honorarios antes de liquidar"));
+  var config=(locking?settings.lockSettings(r.propertyId()):settings.findById(r.propertyId())).orElseThrow(()->new IllegalArgumentException("Configura el propietario y los honorarios antes de liquidar"));
   var result=new ArrayList<SettlementResponse.Line>();var totalIncome=BigDecimal.ZERO;var rent=BigDecimal.ZERO;var totalExpense=BigDecimal.ZERO;
   for(Long id:r.incomeIds().stream().sorted().toList()) {
    var i=(locking?incomes.lockMovement(id):incomes.findById(id)).orElseThrow(()->new ResourceNotFoundException("Ingreso",id));
@@ -79,7 +79,7 @@ public class SettlementService {
  public SettlementResponse cancel(Long id) {
   var s=owned(id);lock(s.getProperty().getId());entityManager.refresh(s);if(s.getStatus().equals("CANCELLED"))return response(s);
   for(var line:lines.findBySettlementIdOrderByIdAsc(id)) {if(line.getKind().equals("INCOME"))incomes.lockMovement(line.getMovementId());else expenses.lockMovement(line.getMovementId());line.setActiveKey(null);lines.save(line);}
-  expenses.findByOwnerSettlementId(id).ifPresent(e->{e.setArchived(true);expenses.save(e);});s.setStatus("CANCELLED");settlements.save(s);return response(s);
+  expenses.lockSettlementFee(id).ifPresent(e->{e.setArchived(true);expenses.save(e);});s.setStatus("CANCELLED");settlements.save(s);return response(s);
  }
  private SettlementResponse response(OwnerSettlement s) {return new SettlementResponse(s.getId(),s.getProperty().getId(),s.getProperty().getName(),s.getPeriodFrom(),s.getPeriodTo(),s.getOwnerName(),s.getOwnerEmail(),s.getFeeMode(),s.getFeeRate(),s.getTaxRate(),s.getCollectionMode(),s.getTotalIncome(),s.getTotalExpense(),s.getFeeBase(),s.getFeeNet(),s.getFeeTax(),s.getFeeNet().add(s.getFeeTax()),s.getNetToOwner(),s.getStatus(),s.getPaidDate(),expenses.findByOwnerSettlementId(s.getId()).map(Expense::getId).orElse(null),lines.findBySettlementIdOrderByIdAsc(s.getId()).stream().map(l->new SettlementResponse.Line(l.getKind(),l.getMovementId(),l.getMovementDate(),l.getDescription(),l.getAmount())).toList(),null);}
  private static String hash(String value) {try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));}catch(NoSuchAlgorithmException e){throw new IllegalStateException(e);}}

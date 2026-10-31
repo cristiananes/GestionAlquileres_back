@@ -32,7 +32,7 @@ public class LeaseService {
         if (duplicate.isPresent()) return response(duplicate.get());
         var lease = Lease.builder().property(p).user(security.getCurrentUser()).tenantName(req.getTenantName()).tenantEmail(req.getTenantEmail()).tenantPhone(req.getTenantPhone())
                 .startDate(req.getStartDate()).endDate(req.getEndDate()).monthlyRent(req.getMonthlyRent()).depositAmount(req.getDepositAmount()).paymentDay(req.getPaymentDay()).clientRequestId(req.getClientRequestId()).build();
-        occupancy.assign(lease,req.getRentalScope(),req.getRoomId(),req.getOccupancyFrom(),req.getOccupancyTo());
+        lease=occupancy.assign(lease,req.getRentalScope(),req.getRoomId(),req.getOccupancyFrom(),req.getOccupancyTo());
         if (req.isGenerateRecurrence()) {
             var month = YearMonth.from(req.getStartDate());
             var anchor = month.atDay(Math.min(req.getPaymentDay(), month.lengthOfMonth()));
@@ -57,6 +57,7 @@ public class LeaseService {
         var lease = leases.findById(id).orElseThrow(() -> new ResourceNotFoundException("Lease", id));
         if (!security.isAdmin() && !lease.getUser().getId().equals(security.getCurrentUserId())) throw new ResourceNotFoundException("Lease", id);
         occupancy.lock(lease.getProperty().getId());
+        lease=occupancy.current(lease);
         if (!archived) occupancy.check(lease);
         lease.setArchived(archived);
         if (lease.getRecurringRule() != null) recurrences.archive(lease.getRecurringRule().getId(), archived);
@@ -65,7 +66,7 @@ public class LeaseService {
     }
     public LeaseResponse assign(Long id,OccupancyRequest req) {
         var l=leases.findById(id).orElseThrow(()->new ResourceNotFoundException("Lease",id));properties.findEntity(l.getProperty().getId());
-        occupancy.assign(l,req.rentalScope(),req.roomId(),req.from(),req.to());return response(leases.save(l));
+        l=occupancy.assign(l,req.rentalScope(),req.roomId(),req.from(),req.to());return response(leases.save(l));
     }
     private LeaseResponse response(Lease l) { return new LeaseResponse(l.getId(), l.getProperty().getId(), l.getTenantName(), l.getTenantEmail(), l.getTenantPhone(), l.getStartDate(), l.getEndDate(), l.getMonthlyRent(), l.getDepositAmount(), l.getPaymentDay(), l.getRecurringRule() == null ? null : l.getRecurringRule().getId(), l.isArchived(), l.getRoom()==null?null:l.getRoom().getId(), l.getRoom()==null?null:l.getRoom().getName(), l.getRoom()==null?null:l.getRoom().getNumber(), l.getRentalScope()==null?RentalScope.UNASSIGNED:l.getRentalScope(), l.getOccupancyFrom()==null?l.getStartDate():l.getOccupancyFrom(), l.getOccupancyTo()==null?l.getEndDate():l.getOccupancyTo()); }
 }

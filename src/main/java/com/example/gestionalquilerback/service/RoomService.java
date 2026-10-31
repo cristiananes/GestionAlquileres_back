@@ -19,7 +19,7 @@ public class RoomService {
  }
  public void archive(Long propertyId,Long roomId,boolean archived) {
   occupancy.lock(propertyId);var r=occupancy.room(roomId,propertyId);
-  if(archived && leases.findByPropertyId(propertyId).stream().anyMatch(l->!l.isArchived() && l.getRoom()!=null && l.getRoom().getId().equals(roomId) && (l.getOccupancyTo()==null || !l.getOccupancyTo().isBefore(LocalDate.now())))) throw new IllegalArgumentException("La habitación tiene estancias vigentes o futuras. Finaliza o reasigna los contratos antes de archivarla");
+  if(archived && leases.lockPropertyLeases(propertyId).stream().anyMatch(l->!l.isArchived() && l.getRoom()!=null && l.getRoom().getId().equals(roomId) && (l.getOccupancyTo()==null || !l.getOccupancyTo().isBefore(LocalDate.now())))) throw new IllegalArgumentException("La habitación tiene estancias vigentes o futuras. Finaliza o reasigna los contratos antes de archivarla");
   r.setArchived(archived);rooms.save(r);
  }
  private RoomResponse response(Room r,LocalDate on) {

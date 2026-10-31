@@ -66,6 +66,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(body);
     }
 
+    @ExceptionHandler(org.springframework.dao.PessimisticLockingFailureException.class)
+    public ResponseEntity<Map<String,Object>> handleBusyRecord(Exception ex) {
+        return buildResponse(HttpStatus.CONFLICT,"Otro cambio está usando este registro. Recarga y vuelve a intentarlo.");
+    }
+
     @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleConflict(Exception ex) {
         return buildResponse(HttpStatus.CONFLICT, "La operación ya existe o tiene registros vinculados. Recarga antes de reintentar.");

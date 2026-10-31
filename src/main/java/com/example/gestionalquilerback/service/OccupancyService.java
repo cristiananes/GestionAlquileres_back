@@ -9,14 +9,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 @Service @RequiredArgsConstructor @Transactional
 public class OccupancyService {
+ @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager entityManager;
  private final PropertyService properties;
  private final PropertyRepository propertyRepository;
  private final RoomRepository rooms;
  private final LeaseRepository leases;
  public void lock(Long propertyId) { properties.findEntity(propertyId); propertyRepository.lockProperty(propertyId).orElseThrow(); }
  public Room room(Long id,Long propertyId) {return rooms.findById(id).filter(r->r.getProperty().getId().equals(propertyId)).orElseThrow(()->new ResourceNotFoundException("Habitación",id));}
- public void assign(Lease l,RentalScope scope,Long roomId,LocalDate from,LocalDate to) {
+ public Lease assign(Lease l,RentalScope scope,Long roomId,LocalDate from,LocalDate to) {
   lock(l.getProperty().getId());
+  l=current(l);
   if(scope==null) scope=RentalScope.UNASSIGNED;
   if(from==null) from=l.getStartDate();
   if(to==null) to=l.getEndDate();
@@ -27,11 +29,13 @@ public class OccupancyService {
   else if(roomId!=null) throw new IllegalArgumentException("Solo los contratos por habitación pueden vincular una habitación");
   l.setRentalScope(scope);l.setRoom(room);l.setOccupancyFrom(from);l.setOccupancyTo(to);
   if(!l.isArchived()) check(l);
+  return l;
  }
+ public Lease current(Lease l) {if(l.getId()==null)return l;entityManager.detach(l);return leases.lockLease(l.getId()).orElseThrow();}
  public void check(Lease l) {
   if(l.getRentalScope()==null || l.getRentalScope()==RentalScope.UNASSIGNED) return;
   if(l.getRoom()!=null && l.getRoom().isArchived()) throw new IllegalArgumentException("Restaura la habitación antes de recuperar el contrato");
-  for(var other:leases.findByPropertyId(l.getProperty().getId())) {
+  for(var other:leases.lockPropertyLeases(l.getProperty().getId())) {
    if(other.isArchived() || other.getId().equals(l.getId()) || other.getRentalScope()==null || other.getRentalScope()==RentalScope.UNASSIGNED) continue;
    boolean sameSpace=l.getRentalScope()==RentalScope.ENTIRE_PROPERTY || other.getRentalScope()==RentalScope.ENTIRE_PROPERTY || l.getRoom()!=null && other.getRoom()!=null && l.getRoom().getId().equals(other.getRoom().getId());
    var a=l.getOccupancyFrom()==null?l.getStartDate():l.getOccupancyFrom();var z=l.getOccupancyTo();

@@ -23,6 +23,7 @@ public class IncomeService {
     private final SecurityUtil securityUtil;
     private final PaymentIntegrity paymentIntegrity;
     private final SettlementIntegrity settlementIntegrity;
+    @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager entityManager;
     private final UtilityIntegrity utilityIntegrity;
 
     public List<IncomeResponse> findAll(Long propertyId, LocalDate from, LocalDate to) {
@@ -112,7 +113,8 @@ public class IncomeService {
     }
 
     private Income findMutable(Long id) {
-        findEntity(id);
+        var previous=findEntity(id);
+        entityManager.detach(previous);
         var entity=repository.lockMovement(id).orElseThrow();
         settlementIntegrity.ensureFree("INCOME",id);
         return entity;

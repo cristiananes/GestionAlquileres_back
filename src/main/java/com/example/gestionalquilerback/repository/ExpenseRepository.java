@@ -10,6 +10,9 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
+ @org.springframework.data.jpa.repository.Query(value="select * from expense where owner_settlement_id=:ownerSettlementId for update",nativeQuery=true)
+ java.util.Optional<Expense> lockSettlementFee(@org.springframework.data.repository.query.Param("ownerSettlementId") Long ownerSettlementId);
+
     @org.springframework.data.jpa.repository.Query(value="select * from expense where id=:id for update",nativeQuery=true)
     java.util.Optional<Expense> lockMovement(@org.springframework.data.repository.query.Param("id") Long id);
 

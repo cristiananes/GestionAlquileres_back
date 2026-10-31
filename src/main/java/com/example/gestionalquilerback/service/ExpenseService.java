@@ -23,6 +23,7 @@ public class ExpenseService {
     private final SecurityUtil securityUtil;
     private final PaymentIntegrity paymentIntegrity;
     private final SettlementIntegrity settlementIntegrity;
+    @jakarta.persistence.PersistenceContext private jakarta.persistence.EntityManager entityManager;
     private final com.example.gestionalquilerback.repository.UtilityBillRepository utilityBills;
 
     public List<ExpenseResponse> findAll(Long propertyId, LocalDate from, LocalDate to) {
@@ -110,7 +111,8 @@ public class ExpenseService {
     }
 
     private Expense findMutable(Long id) {
-        findEntity(id);
+        var previous=findEntity(id);
+        entityManager.detach(previous);
         var entity=repository.lockMovement(id).orElseThrow();
         settlementIntegrity.ensureFree("EXPENSE",id);
         if(entity.getOwnerSettlementId()!=null) throw new IllegalArgumentException("Los honorarios vinculados se corrigen anulando su liquidación");
