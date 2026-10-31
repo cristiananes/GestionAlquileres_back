@@ -117,6 +117,7 @@ public class ReportService {
                     table.addCell(new PdfPCell(new Phrase(
                             i.getProperty() != null ? i.getProperty().getName() : "-", cellFont)));
                     table.addCell(new PdfPCell(new Phrase(switch (i.getIncomeType()) {
+                        case UTILITY_REIMBURSEMENT -> "Reembolso de suministros";
                         case RENT -> "Alquiler";
                         case DEPOSIT -> "Fianza";
                         case LATE_FEE -> "Recargo por demora";

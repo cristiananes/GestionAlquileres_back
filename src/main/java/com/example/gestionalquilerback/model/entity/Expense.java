@@ -20,6 +20,9 @@ public class Expense {
 
     private Long occurrenceId;
 
+    @Column(unique = true)
+    private Long utilityBillId;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

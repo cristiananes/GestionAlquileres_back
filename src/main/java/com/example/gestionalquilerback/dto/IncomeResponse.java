@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 public class IncomeResponse {
     private Long id;
     private Long occurrenceId;
+    private Long utilityShareId;
     private boolean archived;
     private Long propertyId;
     private String propertyName;
