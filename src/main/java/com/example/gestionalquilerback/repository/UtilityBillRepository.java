@@ -8,5 +8,5 @@ public interface UtilityBillRepository extends JpaRepository<UtilityBill,Long> {
  List<UtilityBill> findByUserIdOrderByIdDesc(Long userId);
  Optional<UtilityBill> findByClientRequestIdAndUserId(String key,Long userId);
  Optional<UtilityBill> findByFingerprint(String fingerprint);
- @Lock(LockModeType.PESSIMISTIC_WRITE) @Query("select b from UtilityBill b where b.id=:id") Optional<UtilityBill> lockById(@Param("id") Long id);
+ @org.springframework.data.jpa.repository.Query(value="select * from utility_bill where id=:id for update",nativeQuery=true) Optional<UtilityBill> lockById(@Param("id") Long id);
 }

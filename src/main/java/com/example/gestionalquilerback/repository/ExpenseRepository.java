@@ -10,8 +10,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
-    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
-    @org.springframework.data.jpa.repository.Query("select m from Expense m where m.id=:id")
+    @org.springframework.data.jpa.repository.Query(value="select * from expense where id=:id for update",nativeQuery=true)
     java.util.Optional<Expense> lockMovement(@org.springframework.data.repository.query.Param("id") Long id);
 
     java.util.Optional<Expense> findByUtilityBillId(Long utilityBillId);
