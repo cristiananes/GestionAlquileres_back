@@ -44,7 +44,7 @@ class RoomsAndSettlementsIntegrationTest {
   assertThrows(IllegalArgumentException.class,()->incomeService.delete(rent.getId()));assertThrows(IllegalArgumentException.class,()->expenseService.delete(e.getId()));
   settlements.paid(s.id(),to);settlements.paid(s.id(),to);assertEquals(2,expenses.count());var fee=expenses.findByOwnerSettlementId(s.id()).orElseThrow();assertEquals(0,fee.getAmount().compareTo(new BigDecimal("121")));
   assertThrows(IllegalArgumentException.class,()->expenseService.delete(fee.getId()));
-  settlements.cancel(s.id());assertTrue(fee.isArchived());incomeService.delete(rent.getId());assertEquals("CANCELLED",settlements.get(s.id()).status());
+  settlements.cancel(s.id());assertTrue(expenses.findById(fee.getId()).orElseThrow().isArchived());incomeService.delete(rent.getId());assertEquals("CANCELLED",settlements.get(s.id()).status());
  }
  @Test void directOwnerCollectionDoesNotPayOutRentAgainAndChangedConditionsRequireReview(){
   settlements.saveSettings(property.getId(),new ManagementRequest("Owner",null,FeeMode.FIXED,new BigDecimal("50"),BigDecimal.ZERO,CollectionMode.OWNER));var rent=income(IncomeType.RENT,"1000");
