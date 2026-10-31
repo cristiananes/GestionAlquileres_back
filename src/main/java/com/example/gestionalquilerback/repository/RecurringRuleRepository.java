@@ -7,6 +7,6 @@ public interface RecurringRuleRepository extends JpaRepository<RecurringRule, Lo
     List<RecurringRule> findByUserId(Long userId);
     List<RecurringRule> findByPropertyId(Long propertyId);
     Optional<RecurringRule> findByClientRequestIdAndUserId(String clientRequestId, Long userId);
-    @Lock(LockModeType.PESSIMISTIC_WRITE) @Query("select r from RecurringRule r where r.id = :id")
+    @org.springframework.data.jpa.repository.Query(value="select * from recurring_rule where id=:id for update",nativeQuery=true)
     Optional<RecurringRule> lockById(@org.springframework.data.repository.query.Param("id") Long id);
 }

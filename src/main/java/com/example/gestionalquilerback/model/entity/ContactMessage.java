@@ -27,7 +27,7 @@ public class ContactMessage {
     @Column(nullable = false)
     private String type;
 
-    @Column(nullable = false)
+    @Column(name="`read`",nullable=false)
     @Builder.Default
     private boolean read = false;
 
